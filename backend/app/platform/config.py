@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,20 +20,19 @@ class Settings(BaseSettings):
         description="Convenience only; production must use Alembic migrations.",
     )
     seed_synthetic_professionals: bool = True
-    dev_auth_enabled: bool = Field(
-        default=True,
-        description="Header-based auth for local development; forbidden in production.",
-    )
+    bootstrap_token: SecretStr | None = Field(default=None, description="One-use initial admin bootstrap secret.")
+    session_ttl_hours: int = Field(default=8, ge=1, le=168)
+    session_cookie_secure: bool = False
 
     def validate_runtime(self) -> None:
-        if self.environment.lower() == "production" and self.dev_auth_enabled:
-            raise RuntimeError("DAR_SONRISAS_DEV_AUTH_ENABLED must be false in production")
         if self.environment.lower() == "production" and self.auto_create_schema:
             raise RuntimeError("Auto schema creation is forbidden in production")
         if self.environment.lower() == "production" and self.seed_synthetic_professionals:
             raise RuntimeError("Synthetic seeds are forbidden in production")
         if self.environment.lower() == "production" and "*" in self.cors_origins:
             raise RuntimeError("Wildcard CORS is forbidden in production")
+        if self.environment.lower() == "production" and not self.session_cookie_secure:
+            raise RuntimeError("Secure session cookies are mandatory in production")
 
 
 @lru_cache

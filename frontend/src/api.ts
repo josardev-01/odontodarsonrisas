@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentInput, DevIdentity, Patient, PatientInput, Professional } from './types';
+import type { Appointment, AppointmentInput, AuthenticatedUser, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, LoginResponse, Patient, PatientInput, Professional } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -10,20 +10,28 @@ export class ApiError extends Error {
 }
 
 export function messageForStatus(status: number): string {
-  if (status === 401) return 'La identidad de desarrollo no es válida. Ingresá nuevamente.';
+  if (status === 401) return 'El correo o la contraseña no son válidos, o la sesión venció.';
   if (status === 403) return 'No tenés permiso para realizar esta acción.';
   if (status === 409) return 'La operación entra en conflicto con datos existentes. Revisá la fecha o los datos.';
   return 'Ocurrió un error inesperado. Intentá nuevamente.';
 }
 
-async function request<T>(path: string, identity: DevIdentity, init?: RequestInit): Promise<T> {
+export function csrfTokenFromCookie(cookie = document.cookie): string | null {
+  const item = cookie.split(';').map((part) => part.trim()).find((part) => part.startsWith('ds_csrf='));
+  return item ? decodeURIComponent(item.slice('ds_csrf='.length)) : null;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? 'GET').toUpperCase();
+  const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+  const csrfToken = mutating && path !== '/auth/login' && path !== '/auth/bootstrap' ? csrfTokenFromCookie() : null;
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
-      'X-Dev-User': identity.user,
-      'X-Dev-Role': identity.role,
       ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
       ...init?.headers,
     },
   });
@@ -33,13 +41,22 @@ async function request<T>(path: string, identity: DevIdentity, init?: RequestIni
 }
 
 export const api = {
-  me: (identity: DevIdentity) => request<unknown>('/auth/me', identity),
-  patients: (identity: DevIdentity) => request<Patient[]>('/patients', identity),
-  createPatient: (identity: DevIdentity, input: PatientInput) => request<Patient>('/patients', identity, { method: 'POST', body: JSON.stringify(input) }),
-  professionals: (identity: DevIdentity) => request<Professional[]>('/professionals', identity),
-  appointments: (identity: DevIdentity, from: string, to: string) => {
+  login: (email: string, password: string) => request<LoginResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  me: () => request<AuthenticatedUser>('/auth/me'),
+  logout: () => request<void>('/auth/logout', { method: 'POST' }),
+  patients: () => request<Patient[]>('/patients'),
+  createPatient: (input: PatientInput) => request<Patient>('/patients', { method: 'POST', body: JSON.stringify(input) }),
+  patient: (id: string) => request<Patient>(`/patients/${id}`),
+  clinicalProfile: (id: string) => request<ClinicalProfile|null>(`/patients/${id}/clinical-profile`),
+  saveClinicalProfile: (id: string, input: ClinicalProfileInput) => request<ClinicalProfile>(`/patients/${id}/clinical-profile`, { method:'PUT', body:JSON.stringify(input) }),
+  clinicalEntries: (id: string) => request<ClinicalEntry[]>(`/patients/${id}/clinical-entries`),
+  createClinicalEntry: (id:string,input:ClinicalEntryInput) => request<ClinicalEntry>(`/patients/${id}/clinical-entries`,{method:'POST',body:JSON.stringify(input)}),
+  consents: (id:string) => request<ConsentRecord[]>(`/patients/${id}/consents`),
+  createConsent: (id:string,input:ConsentInput) => request<ConsentRecord>(`/patients/${id}/consents`,{method:'POST',body:JSON.stringify(input)}),
+  professionals: () => request<Professional[]>('/professionals'),
+  appointments: (from: string, to: string) => {
     const query = new URLSearchParams({ from: `${from}T00:00:00Z`, to: `${to}T23:59:59.999Z` });
-    return request<Appointment[]>(`/appointments?${query}`, identity);
+    return request<Appointment[]>(`/appointments?${query}`);
   },
-  createAppointment: (identity: DevIdentity, input: AppointmentInput) => request<Appointment>('/appointments', identity, { method: 'POST', body: JSON.stringify(input) }),
+  createAppointment: (input: AppointmentInput) => request<Appointment>('/appointments', { method: 'POST', body: JSON.stringify(input) }),
 };

@@ -9,6 +9,7 @@ description = "Backend modular para Dar Sonrisas"
 requires-python = ">=3.12"
 dependencies = [
   "alembic>=1.13,<2",
+  "argon2-cffi>=23.1,<26",
   "asyncpg>=0.29,<1",
   "email-validator>=2.2,<3",
   "fastapi>=0.115,<1",

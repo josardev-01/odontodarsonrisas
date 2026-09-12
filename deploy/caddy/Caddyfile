@@ -1,0 +1,19 @@
+{
+    admin off
+    auto_https off
+}
+
+:8080 {
+    encode zstd gzip
+
+    respond /healthz "ok" 200
+
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    handle {
+        reverse_proxy frontend:8080
+    }
+}
+
