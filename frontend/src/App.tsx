@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from './api';
-import type { Appointment, AppointmentInput, DevIdentity, Patient, PatientInput, Professional } from './types';
+import type { Appointment, AppointmentInput, AuthenticatedUser, Patient, PatientInput, Professional } from './types';
+import { PatientDetail } from './PatientDetail';
 
 type View = 'patients' | 'appointments';
 const toDateInput = (date: Date) => date.toISOString().slice(0, 10);
@@ -9,28 +10,31 @@ export function initialRange() {
   const to = new Date(); to.setDate(to.getDate() + 90);
   return { from: toDateInput(from), to: toDateInput(to) };
 }
+export function canManageClinic(user: AuthenticatedUser) {
+  return user.roles.some((role) => role === 'admin' || role === 'recepcion' || role === 'profesional');
+}
 
 function ErrorNotice({ message }: { message: string }) {
   return message ? <div className="notice notice--error" role="alert">{message}</div> : null;
 }
 
-function Login({ onLogin }: { onLogin: (identity: DevIdentity) => Promise<void> }) {
-  const [error, setError] = useState('');
+function Login({ error, onLogin }: { error: string; onLogin: (email: string, password: string) => Promise<void> }) {
+  const [localError, setLocalError] = useState('');
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError('');
+    event.preventDefault(); setBusy(true); setLocalError('');
     const data = new FormData(event.currentTarget);
-    try { await onLogin({ user: String(data.get('user')).trim(), role: String(data.get('role')) as DevIdentity['role'] }); }
-    catch (reason) { setError(reason instanceof ApiError ? reason.message : 'No fue posible conectar con el servicio.'); }
+    try { await onLogin(String(data.get('email')).trim(), String(data.get('password'))); }
+    catch (reason) { setLocalError(reason instanceof ApiError ? reason.message : 'No fue posible conectar con el servicio.'); }
     finally { setBusy(false); }
   }
   return <main id="contenido" className="login-shell"><section className="card login-card" aria-labelledby="login-title">
-    <p className="eyebrow">Acceso provisional de desarrollo</p><h1 id="login-title">Dar Sonrisas</h1>
-    <p>Esta identificación no es un mecanismo de autenticación para producción.</p><ErrorNotice message={error} />
+    <p className="eyebrow">Acceso para personal</p><h1 id="login-title">Dar Sonrisas</h1>
+    <p>Ingresá con la cuenta asignada por la clínica.</p><ErrorNotice message={localError || error} />
     <form onSubmit={submit} className="form-stack">
-      <label>Nombre de desarrollo<input name="user" autoComplete="off" required /></label>
-      <label>Rol<select name="role" defaultValue="recepcion"><option value="recepcion">Recepción</option><option value="admin">Administración</option></select></label>
-      <button disabled={busy}>{busy ? 'Verificando…' : 'Ingresar'}</button>
+      <label>Correo electrónico<input name="email" type="email" autoComplete="username" required /></label>
+      <label>Contraseña<input name="password" type="password" autoComplete="current-password" required /></label>
+      <button disabled={busy}>{busy ? 'Ingresando…' : 'Ingresar'}</button>
     </form>
   </section></main>;
 }
@@ -39,7 +43,7 @@ function PatientForm({ onCreate }: { onCreate: (input: PatientInput) => Promise<
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); const form = event.currentTarget; const data = new FormData(form);
-    try { await onCreate({ first_name: String(data.get('first_name')).trim(), last_name: String(data.get('last_name')).trim(), document_type: String(data.get('document_type')).trim(), document_number: String(data.get('document_number')).trim(), birth_date: String(data.get('birth_date')) || null, email: String(data.get('email')).trim() || null, phone: String(data.get('phone')).trim() || null }); form.reset(); }
+    try { await onCreate({ first_name: String(data.get('first_name')).trim(), last_name: String(data.get('last_name')).trim(), document_type: String(data.get('document_type')).trim(), document_number: String(data.get('document_number')).trim(), birth_date: String(data.get('birth_date')) || null, email: String(data.get('email')).trim() || null, phone: String(data.get('phone')).trim() || null, address:String(data.get('address')).trim()||null,city:String(data.get('city')).trim()||null,occupation:String(data.get('occupation')).trim()||null,emergency_contact_name:String(data.get('emergency_contact_name')).trim()||null,emergency_contact_phone:String(data.get('emergency_contact_phone')).trim()||null }); form.reset(); }
     finally { setBusy(false); }
   }
   return <form className="card form-grid" onSubmit={submit} aria-labelledby="new-patient-title"><h2 id="new-patient-title">Nuevo paciente</h2>
@@ -47,13 +51,14 @@ function PatientForm({ onCreate }: { onCreate: (input: PatientInput) => Promise<
     <label>Tipo de documento<input name="document_type" defaultValue="CI" maxLength={30} required /></label><label>Número de documento<input name="document_number" maxLength={80} required /></label>
     <label>Fecha de nacimiento<input name="birth_date" type="date" /></label>
     <label>Correo<input name="email" type="email" autoComplete="email" /></label><label>Teléfono<input name="phone" type="tel" autoComplete="tel" /></label>
+    <label>Dirección<input name="address" autoComplete="street-address"/></label><label>Ciudad<input name="city" autoComplete="address-level2"/></label><label>Ocupación<input name="occupation"/></label><label>Contacto de emergencia<input name="emergency_contact_name"/></label><label>Teléfono de emergencia<input name="emergency_contact_phone" type="tel"/></label>
     <button disabled={busy}>{busy ? 'Guardando…' : 'Guardar paciente'}</button></form>;
 }
 
-function Patients({ items, onCreate }: { items: Patient[]; onCreate: (input: PatientInput) => Promise<void> }) {
+function Patients({ items, onCreate, onOpen, canCreate }: { items: Patient[]; onCreate: (input: PatientInput) => Promise<void>; onOpen:(patient:Patient)=>void; canCreate:boolean }) {
   return <section aria-labelledby="patients-title"><div className="section-heading"><div><p className="eyebrow">Personas</p><h1 id="patients-title">Pacientes</h1></div><span>{items.length} registrados</span></div>
-    <PatientForm onCreate={onCreate} /><div className="card table-wrap"><table><caption>Listado de pacientes</caption><thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th><th scope="col">Teléfono</th></tr></thead><tbody>
-      {items.length ? items.map((item) => <tr key={item.id}><th scope="row">{item.first_name} {item.last_name}</th><td>{item.email || '—'}</td><td>{item.phone || '—'}</td></tr>) : <tr><td colSpan={3}>Todavía no hay pacientes.</td></tr>}
+    {canCreate&&<PatientForm onCreate={onCreate} />}<div className="card table-wrap"><table><caption>Listado de pacientes</caption><thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th><th scope="col">Teléfono</th></tr></thead><tbody>
+      {items.length ? items.map((item) => <tr key={item.id}><th scope="row"><button className="link-button" onClick={()=>onOpen(item)}>{item.first_name} {item.last_name}</button></th><td>{item.email || '—'}</td><td>{item.phone || '—'}</td></tr>) : <tr><td colSpan={3}>Todavía no hay pacientes.</td></tr>}
     </tbody></table></div></section>;
 }
 
@@ -85,16 +90,21 @@ function Appointments({ items, patients, professionals, range, onRange, onCreate
 }
 
 export function App() {
-  const [identity,setIdentity]=useState<DevIdentity|null>(null); const [view,setView]=useState<View>('patients');
-  const [patients,setPatients]=useState<Patient[]>([]); const [professionals,setProfessionals]=useState<Professional[]>([]); const [appointments,setAppointments]=useState<Appointment[]>([]);
+  const [user,setUser]=useState<AuthenticatedUser|null>(null); const [checking,setChecking]=useState(true); const [loginError,setLoginError]=useState('');
+  const [view,setView]=useState<View>('patients'); const [patients,setPatients]=useState<Patient[]>([]); const [professionals,setProfessionals]=useState<Professional[]>([]); const [appointments,setAppointments]=useState<Appointment[]>([]);
+  const [selectedPatient,setSelectedPatient]=useState<Patient|null>(null);
   const [range,setRange]=useState(initialRange); const [error,setError]=useState('');
-  const handleError=useCallback((reason:unknown)=>{setError(reason instanceof ApiError?reason.message:'No fue posible conectar con el servicio.');if(reason instanceof ApiError&&reason.status===401)setIdentity(null);},[]);
-  async function login(candidate:DevIdentity){await api.me(candidate);setIdentity(candidate);}
-  useEffect(()=>{if(!identity)return;setError('');Promise.all([api.patients(identity),api.professionals(identity),api.appointments(identity,range.from,range.to)]).then(([p,pro,a])=>{setPatients(p);setProfessionals(pro);setAppointments(a);}).catch(handleError);},[identity,range,handleError]);
-  if(!identity)return <Login onLogin={login}/>;
-  async function createPatient(input:PatientInput){setError('');try{const result=await api.createPatient(identity!,input);setPatients((items)=>[...items,result]);}catch(reason){handleError(reason);throw reason;}}
-  async function createAppointment(input:AppointmentInput){setError('');try{const result=await api.createAppointment(identity!,input);setAppointments((items)=>[...items,result]);}catch(reason){handleError(reason);throw reason;}}
-  return <div className="app-shell"><header className="topbar"><a className="brand" href="#contenido">Dar Sonrisas</a><span className="identity">{identity.user} · {identity.role}</span><button className="button-secondary" onClick={()=>setIdentity(null)}>Cerrar sesión</button></header>
-    <div className="workspace"><nav aria-label="Secciones principales"><button aria-current={view==='patients'?'page':undefined} onClick={()=>setView('patients')}>Pacientes</button><button aria-current={view==='appointments'?'page':undefined} onClick={()=>setView('appointments')}>Agenda</button></nav>
-      <main id="contenido"><ErrorNotice message={error}/>{view==='patients'?<Patients items={patients} onCreate={createPatient}/>:<Appointments items={appointments} patients={patients} professionals={professionals} range={range} onRange={setRange} onCreate={createAppointment}/>}</main></div></div>;
+  const handleError=useCallback((reason:unknown)=>{setError(reason instanceof ApiError?reason.message:'No fue posible conectar con el servicio.');if(reason instanceof ApiError&&reason.status===401){setUser(null);setLoginError('La sesión venció. Ingresá nuevamente.');}},[]);
+  useEffect(()=>{api.me().then(setUser).catch((reason)=>{if(!(reason instanceof ApiError&&reason.status===401))setLoginError('No fue posible verificar la sesión.');}).finally(()=>setChecking(false));},[]);
+  useEffect(()=>{if(!user||!canManageClinic(user))return;setError('');if(user.roles.includes('profesional')){api.patients().then(setPatients).catch(handleError);return;}Promise.all([api.patients(),api.professionals(),api.appointments(range.from,range.to)]).then(([p,pro,a])=>{setPatients(p);setProfessionals(pro);setAppointments(a);}).catch(handleError);},[user,range,handleError]);
+  async function login(email:string,password:string){const result=await api.login(email,password);setLoginError('');setUser(result.user);}
+  async function logout(){try{await api.logout();}catch(reason){if(!(reason instanceof ApiError&&reason.status===401)){handleError(reason);return;}}setUser(null);setLoginError('');setError('');}
+  if(checking)return <main id="contenido" className="login-shell" aria-busy="true"><p>Verificando sesión…</p></main>;
+  if(!user)return <Login error={loginError} onLogin={login}/>;
+  if(!canManageClinic(user))return <div className="app-shell"><header className="topbar"><span className="brand">Dar Sonrisas</span><button className="button-secondary" onClick={logout}>Cerrar sesión</button></header><main id="contenido" className="restricted"><h1>Acceso limitado</h1><p>Tu rol no tiene funciones habilitadas en este incremento.</p></main></div>;
+  async function createPatient(input:PatientInput){setError('');try{const result=await api.createPatient(input);setPatients((items)=>[...items,result]);}catch(reason){handleError(reason);throw reason;}}
+  async function createAppointment(input:AppointmentInput){setError('');try{const result=await api.createAppointment(input);setAppointments((items)=>[...items,result]);}catch(reason){handleError(reason);throw reason;}}
+  return <div className="app-shell"><header className="topbar"><a className="brand" href="#contenido">Dar Sonrisas</a><span className="identity">{user.display_name} · {user.roles.join(', ')}</span><button className="button-secondary" onClick={logout}>Cerrar sesión</button></header>
+    <div className="workspace"><nav aria-label="Secciones principales"><button aria-current={view==='patients'?'page':undefined} onClick={()=>{setView('patients');setSelectedPatient(null);}}>Pacientes</button>{!user.roles.includes('profesional')&&<button aria-current={view==='appointments'?'page':undefined} onClick={()=>{setView('appointments');setSelectedPatient(null);}}>Agenda</button>}</nav>
+      <main id="contenido"><ErrorNotice message={error}/>{selectedPatient?<PatientDetail patient={selectedPatient} user={user} onBack={()=>setSelectedPatient(null)}/>:view==='patients'?<Patients items={patients} onCreate={createPatient} onOpen={setSelectedPatient} canCreate={!user.roles.includes('profesional')}/>:<Appointments items={appointments} patients={patients} professionals={professionals} range={range} onRange={setRange} onCreate={createAppointment}/>}</main></div></div>;
 }

@@ -12,6 +12,11 @@ class PatientCreate(BaseModel):
     birth_date: date | None = None
     phone: str | None = Field(default=None, max_length=40)
     email: EmailStr | None = None
+    address: str | None = Field(default=None, max_length=300)
+    city: str | None = Field(default=None, max_length=100)
+    occupation: str | None = Field(default=None, max_length=120)
+    emergency_contact_name: str | None = Field(default=None, max_length=160)
+    emergency_contact_phone: str | None = Field(default=None, max_length=40)
 
 
 class PatientRead(PatientCreate):
@@ -20,3 +25,15 @@ class PatientRead(PatientCreate):
     active: bool
     created_at: datetime
 
+
+class PatientUpdate(BaseModel):
+    first_name: str = Field(min_length=1, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+    birth_date: date | None = None
+    phone: str | None = Field(default=None, max_length=40)
+    email: EmailStr | None = None
+    address: str | None = Field(default=None, max_length=300)
+    city: str | None = Field(default=None, max_length=100)
+    occupation: str | None = Field(default=None, max_length=120)
+    emergency_contact_name: str | None = Field(default=None, max_length=160)
+    emergency_contact_phone: str | None = Field(default=None, max_length=40)

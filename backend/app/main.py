@@ -7,8 +7,10 @@ from sqlalchemy import select, text
 
 from app.modules.audit import models as audit_models  # noqa: F401
 from app.modules.identity.api import router as identity_router
+from app.modules.identity import models as identity_models  # noqa: F401
 from app.modules.patients import models as patient_models  # noqa: F401
 from app.modules.patients.api import router as patients_router
+from app.modules.patients.clinical_api import router as clinical_router
 from app.modules.professionals import models as professional_models  # noqa: F401
 from app.modules.professionals.api import router as professionals_router
 from app.modules.professionals.models import Professional
@@ -47,9 +49,9 @@ if settings.cors_origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_credentials=False,
+        allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH"],
-        allow_headers=["Content-Type", "X-Dev-User", "X-Dev-Role"],
+        allow_headers=["Content-Type", "X-CSRF-Token"],
     )
 
 
@@ -72,5 +74,6 @@ async def ready():
 
 app.include_router(identity_router, prefix="/api/v1")
 app.include_router(patients_router, prefix="/api/v1")
+app.include_router(clinical_router, prefix="/api/v1")
 app.include_router(professionals_router, prefix="/api/v1")
 app.include_router(scheduling_router, prefix="/api/v1")

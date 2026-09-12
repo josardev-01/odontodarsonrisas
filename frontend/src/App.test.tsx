@@ -5,6 +5,19 @@ import { App } from './App';
 
 afterEach(()=>vi.restoreAllMocks());
 describe('App',()=>{
-  it('solicita nombre y rol sin contraseña ni token',()=>{render(<App/>);expect(screen.getByLabelText('Nombre de desarrollo')).toBeRequired();expect(screen.getByLabelText('Rol')).toBeInTheDocument();expect(screen.queryByLabelText('Contraseña')).not.toBeInTheDocument();});
-  it('muestra un rechazo 403 de forma accesible',async()=>{vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(null,{status:403}));render(<App/>);await userEvent.type(screen.getByLabelText('Nombre de desarrollo'),'Persona Sintética');await userEvent.click(screen.getByRole('button',{name:'Ingresar'}));expect(await screen.findByRole('alert')).toHaveTextContent('No tenés permiso');});
+  it('solicita correo y contraseña después de comprobar que no existe sesión',async()=>{
+    vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(null,{status:401}));
+    render(<App/>);
+    expect(await screen.findByLabelText('Correo electrónico')).toBeRequired();
+    expect(screen.getByLabelText('Contraseña')).toBeRequired();
+    expect(screen.queryByText('Rol')).not.toBeInTheDocument();
+  });
+  it('muestra credenciales inválidas de forma accesible',async()=>{
+    vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(null,{status:401}));
+    render(<App/>);
+    await userEvent.type(await screen.findByLabelText('Correo electrónico'),'persona@example.com');
+    await userEvent.type(screen.getByLabelText('Contraseña'),'incorrecta');
+    await userEvent.click(screen.getByRole('button',{name:'Ingresar'}));
+    expect(await screen.findByRole('alert')).toHaveTextContent('correo o la contraseña');
+  });
 });

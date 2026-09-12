@@ -74,7 +74,7 @@ async def create_appointment(payload: AppointmentCreate, user: Staff, session: D
     except IntegrityError as exc:
         await session.rollback()
         raise ConflictError("The professional already has an appointment in that time window") from exc
-    record_event(session, actor_id=user.id, action="appointment.created", resource_type="appointment", resource_id=appointment.id)
+    record_event(session, actor_id=str(user.id), action="appointment.created", resource_type="appointment", resource_id=appointment.id)
     try:
         await session.commit()
     except IntegrityError as exc:
@@ -107,7 +107,7 @@ async def reschedule_appointment(
     appointment.ends_at = as_utc(payload.ends_at)
     record_event(
         session,
-        actor_id=user.id,
+        actor_id=str(user.id),
         action="appointment.rescheduled",
         resource_type="appointment",
         resource_id=appointment.id,

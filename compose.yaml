@@ -30,7 +30,9 @@ services:
       DAR_SONRISAS_CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:8080"]}
       DAR_SONRISAS_AUTO_CREATE_SCHEMA: "false"
       DAR_SONRISAS_SEED_SYNTHETIC_PROFESSIONALS: ${SEED_SYNTHETIC_PROFESSIONALS:-true}
-      DAR_SONRISAS_DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-true}
+      DAR_SONRISAS_BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?Define BOOTSTRAP_TOKEN in .env}
+      DAR_SONRISAS_SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-8}
+      DAR_SONRISAS_SESSION_COOKIE_SECURE: "false"
     expose:
       - "8000"
     networks:
@@ -59,7 +61,6 @@ services:
       DAR_SONRISAS_DATABASE_URL: ${DATABASE_URL:?Define DATABASE_URL in .env}
       DAR_SONRISAS_AUTO_CREATE_SCHEMA: "false"
       DAR_SONRISAS_SEED_SYNTHETIC_PROFESSIONALS: "false"
-      DAR_SONRISAS_DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-true}
     networks:
       - data
     depends_on:
@@ -77,6 +78,29 @@ services:
       - edge
     depends_on:
       backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  caddy:
+    # Proxy HTTP local/base. No solicita certificados ni representa produccion.
+    image: caddy:2-alpine
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    expose:
+      - "8080"
+    networks:
+      - edge
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]

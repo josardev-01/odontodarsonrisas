@@ -1,0 +1,10 @@
+textarea{font:inherit;width:100%;min-height:7rem;resize:vertical;border:1px solid #9cadad;border-radius:.55rem;padding:.7rem;background:#fff;color:#183138}
+textarea:focus-visible{outline:3px solid #f1a208;outline-offset:2px}
+.link-button{padding:0;background:transparent;color:#0c6568;text-decoration:underline;text-align:left}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;padding:0 1.25rem 1.25rem}
+.detail-grid div{border-bottom:1px solid #e1e8e6;padding:.5rem}
+.detail-grid dt{font-weight:800}.detail-grid dd{margin:.25rem 0 0}
+.clinical-entry{padding:1rem 1.25rem;border-bottom:1px solid #e1e8e6}.clinical-entry:last-child{border-bottom:0}
+.clinical-entry h3{margin:.35rem 0}.clinical-entry p{white-space:pre-wrap}
+.card>h2{padding:1.25rem 1.25rem 0}.card>p{padding:0 1.25rem 1.25rem}
+@media(max-width:700px){.detail-grid{grid-template-columns:1fr}}

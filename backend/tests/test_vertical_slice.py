@@ -7,11 +7,6 @@ import pytest
 async def test_health_and_authentication(client):
     assert (await client.get("/api/v1/health/live")).status_code == 200
     assert (await client.get("/api/v1/patients")).status_code == 401
-    forbidden = await client.get(
-        "/api/v1/patients",
-        headers={"X-Dev-User": "profesional-ejemplo", "X-Dev-Role": "profesional"},
-    )
-    assert forbidden.status_code == 403
 
 
 @pytest.mark.asyncio
