@@ -1,0 +1,95 @@
+name: dar-sonrisas
+
+# Base compartida para desarrollo. No constituye una definicion de produccion.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dar_sonrisas}
+      POSTGRES_USER: ${POSTGRES_USER:-dar_sonrisas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DAR_SONRISAS_ENVIRONMENT: ${APP_ENV:-development}
+      DAR_SONRISAS_DATABASE_URL: ${DATABASE_URL:?Define DATABASE_URL in .env}
+      DAR_SONRISAS_CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:8080"]}
+      DAR_SONRISAS_AUTO_CREATE_SCHEMA: "false"
+      DAR_SONRISAS_SEED_SYNTHETIC_PROFESSIONALS: ${SEED_SYNTHETIC_PROFESSIONALS:-true}
+      DAR_SONRISAS_DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-true}
+    expose:
+      - "8000"
+    networks:
+      - edge
+      - data
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=2)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DAR_SONRISAS_ENVIRONMENT: ${APP_ENV:-development}
+      DAR_SONRISAS_DATABASE_URL: ${DATABASE_URL:?Define DATABASE_URL in .env}
+      DAR_SONRISAS_AUTO_CREATE_SCHEMA: "false"
+      DAR_SONRISAS_SEED_SYNTHETIC_PROFESSIONALS: "false"
+      DAR_SONRISAS_DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-true}
+    networks:
+      - data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    expose:
+      - "8080"
+    networks:
+      - edge
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+networks:
+  edge:
+  data:
+    internal: true
+
+volumes:
+  postgres_data:
