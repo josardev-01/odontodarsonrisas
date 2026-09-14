@@ -11,6 +11,7 @@ from app.modules.patients.models import ClinicalEntry, ClinicalProfile, ConsentR
 from app.modules.professionals.models import Professional  # noqa: F401
 from app.modules.scheduling.models import Appointment  # noqa: F401
 from app.modules.treatments.models import Treatment  # noqa: F401
+from app.modules.treatment_plans.models import TreatmentPlan, TreatmentPlanItem  # noqa: F401
 from app.platform.config import get_settings
 from app.platform.database import Base
 

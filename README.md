@@ -12,7 +12,7 @@ Scaffold inicial para la aplicacion web de la clinica odontologica. La infraestr
 - Agenda: creacion, consulta y proteccion contra colisiones de citas.
 - Identidad: sesiones seguras para personal y permisos por rol.
 
-Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el perfil personal y consentimientos; administracion y profesionales tambien acceden a antecedentes, historia clinica y odontograma. El catalogo de tratamientos puede consultarse por todo el personal y solo administracion crea registros.
+Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el perfil personal y consentimientos; administracion y profesionales tambien acceden a antecedentes, historia clinica, odontograma y planes de tratamiento con presupuestos en PYG. El catalogo de tratamientos puede consultarse por todo el personal y solo administracion crea registros.
 
 ## Estado de las decisiones
 
