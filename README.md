@@ -16,6 +16,10 @@ Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el p
 
 Administracion y recepcion pueden emitir comprobantes internos desde planes aceptados y registrar pagos parciales o totales. Estos registros son control administrativo y no constituyen facturacion electronica tributaria.
 
+Administracion y recepcion pueden registrar autorizaciones y preparar notificaciones exclusivamente por WhatsApp o SMS. Los mensajes quedan en una cola persistente hasta configurar un proveedor externo; no se simula un envio real. Revocar una autorizacion cancela los mensajes pendientes de ese canal.
+
+El panel administrativo presenta metricas agregadas de pacientes, citas, cobros, saldos y comprobantes. Solo administracion puede consultarlo y los reportes no exponen datos clinicos identificables.
+
 ## Estado de las decisiones
 
 Este scaffold es solo para desarrollo. Antes de crear el despliegue de produccion deben confirmarse:

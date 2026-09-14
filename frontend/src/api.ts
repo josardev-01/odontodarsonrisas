@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentInput, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, Invoice, LoginResponse, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, PaymentInput, Professional, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
+import type { Appointment, AppointmentInput, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, Invoice, LoginResponse, NotificationChannel, NotificationConsent, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, PatientNotification, PaymentInput, Professional, ReportSummary, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -67,6 +67,13 @@ export const api = {
   createInvoice: (patientId:string,treatmentPlanId:string,dueDate:string|null) => request<Invoice>(`/patients/${patientId}/invoices`,{method:'POST',body:JSON.stringify({treatment_plan_id:treatmentPlanId,due_date:dueDate})}),
   addPayment: (patientId:string,invoiceId:string,input:PaymentInput) => request<Invoice>(`/patients/${patientId}/invoices/${invoiceId}/payments`,{method:'POST',body:JSON.stringify(input)}),
   cancelInvoice: (patientId:string,invoiceId:string) => request<Invoice>(`/patients/${patientId}/invoices/${invoiceId}/cancel`,{method:'POST'}),
+  reportSummary: (from:string,to:string) => request<ReportSummary>(`/admin/reports/summary?${new URLSearchParams({from,to})}`),
+  notificationConsents: (patientId:string) => request<NotificationConsent[]>(`/patients/${patientId}/notification-consents`),
+  grantNotificationConsent: (patientId:string,channel:NotificationChannel,grantedAt:string,evidenceLocation:string) => request<NotificationConsent>(`/patients/${patientId}/notification-consents`,{method:'POST',body:JSON.stringify({channel,granted_at:grantedAt,evidence_location:evidenceLocation})}),
+  revokeNotificationConsent: (patientId:string,channel:NotificationChannel) => request<NotificationConsent>(`/patients/${patientId}/notification-consents/${channel}/revoke`,{method:'POST'}),
+  notifications: (patientId:string) => request<PatientNotification[]>(`/patients/${patientId}/notifications`),
+  createNotification: (patientId:string,channel:NotificationChannel,message:string) => request<PatientNotification>(`/patients/${patientId}/notifications`,{method:'POST',body:JSON.stringify({channel,message})}),
+  cancelNotification: (patientId:string,notificationId:string) => request<PatientNotification>(`/patients/${patientId}/notifications/${notificationId}/cancel`,{method:'POST'}),
   professionals: () => request<Professional[]>('/professionals'),
   appointments: (from: string, to: string) => {
     const query = new URLSearchParams({ from: `${from}T00:00:00Z`, to: `${to}T23:59:59.999Z` });

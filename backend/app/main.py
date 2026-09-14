@@ -9,6 +9,8 @@ from app.modules.audit import models as audit_models  # noqa: F401
 from app.modules.billing import models as billing_models  # noqa: F401
 from app.modules.billing.api import router as billing_router
 from app.modules.identity.api import router as identity_router
+from app.modules.notifications import models as notification_models  # noqa: F401
+from app.modules.notifications.api import router as notifications_router
 from app.modules.identity import models as identity_models  # noqa: F401
 from app.modules.patients import models as patient_models  # noqa: F401
 from app.modules.odontogram import models as odontogram_models  # noqa: F401
@@ -18,6 +20,7 @@ from app.modules.patients.clinical_api import router as clinical_router
 from app.modules.professionals import models as professional_models  # noqa: F401
 from app.modules.professionals.api import router as professionals_router
 from app.modules.professionals.models import Professional
+from app.modules.reporting.api import router as reporting_router
 from app.modules.scheduling import models as scheduling_models  # noqa: F401
 from app.modules.scheduling.api import router as scheduling_router
 from app.modules.treatments import models as treatment_models  # noqa: F401
@@ -75,6 +78,8 @@ async def ready():
             await session.execute(text("SELECT 1"))
             await session.execute(text("SELECT 1 FROM patients LIMIT 1"))
             await session.execute(text("SELECT 1 FROM appointments LIMIT 1"))
+            await session.execute(text("SELECT 1 FROM invoices LIMIT 1"))
+            await session.execute(text("SELECT 1 FROM notifications LIMIT 1"))
     except Exception:
         return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content={"status": "unavailable"})
     return {"status": "ready"}
@@ -89,3 +94,5 @@ app.include_router(scheduling_router, prefix="/api/v1")
 app.include_router(treatments_router, prefix="/api/v1")
 app.include_router(treatment_plans_router, prefix="/api/v1")
 app.include_router(billing_router, prefix="/api/v1")
+app.include_router(reporting_router, prefix="/api/v1")
+app.include_router(notifications_router, prefix="/api/v1")
