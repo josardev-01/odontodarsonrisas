@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentInput, AuthenticatedUser, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, LoginResponse, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, Professional, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
+import type { Appointment, AppointmentInput, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, Invoice, LoginResponse, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, PaymentInput, Professional, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -62,6 +62,11 @@ export const api = {
   createTreatmentPlan: (patientId:string,input:TreatmentPlanInput) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans`,{method:'POST',body:JSON.stringify(input)}),
   addTreatmentPlanItem: (patientId:string,planId:string,input:TreatmentPlanItemInput) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans/${planId}/items`,{method:'POST',body:JSON.stringify(input)}),
   changeTreatmentPlanStatus: (patientId:string,planId:string,status:TreatmentPlanStatus) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans/${planId}/status`,{method:'PATCH',body:JSON.stringify({status})}),
+  invoices: (patientId:string) => request<Invoice[]>(`/patients/${patientId}/invoices`),
+  billablePlans: (patientId:string) => request<BillablePlan[]>(`/patients/${patientId}/invoices/billable-plans`),
+  createInvoice: (patientId:string,treatmentPlanId:string,dueDate:string|null) => request<Invoice>(`/patients/${patientId}/invoices`,{method:'POST',body:JSON.stringify({treatment_plan_id:treatmentPlanId,due_date:dueDate})}),
+  addPayment: (patientId:string,invoiceId:string,input:PaymentInput) => request<Invoice>(`/patients/${patientId}/invoices/${invoiceId}/payments`,{method:'POST',body:JSON.stringify(input)}),
+  cancelInvoice: (patientId:string,invoiceId:string) => request<Invoice>(`/patients/${patientId}/invoices/${invoiceId}/cancel`,{method:'POST'}),
   professionals: () => request<Professional[]>('/professionals'),
   appointments: (from: string, to: string) => {
     const query = new URLSearchParams({ from: `${from}T00:00:00Z`, to: `${to}T23:59:59.999Z` });

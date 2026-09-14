@@ -14,6 +14,8 @@ Scaffold inicial para la aplicacion web de la clinica odontologica. La infraestr
 
 Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el perfil personal y consentimientos; administracion y profesionales tambien acceden a antecedentes, historia clinica, odontograma y planes de tratamiento con presupuestos en PYG. El catalogo de tratamientos puede consultarse por todo el personal y solo administracion crea registros.
 
+Administracion y recepcion pueden emitir comprobantes internos desde planes aceptados y registrar pagos parciales o totales. Estos registros son control administrativo y no constituyen facturacion electronica tributaria.
+
 ## Estado de las decisiones
 
 Este scaffold es solo para desarrollo. Antes de crear el despliegue de produccion deben confirmarse:

@@ -6,6 +6,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select, text
 
 from app.modules.audit import models as audit_models  # noqa: F401
+from app.modules.billing import models as billing_models  # noqa: F401
+from app.modules.billing.api import router as billing_router
 from app.modules.identity.api import router as identity_router
 from app.modules.identity import models as identity_models  # noqa: F401
 from app.modules.patients import models as patient_models  # noqa: F401
@@ -86,3 +88,4 @@ app.include_router(professionals_router, prefix="/api/v1")
 app.include_router(scheduling_router, prefix="/api/v1")
 app.include_router(treatments_router, prefix="/api/v1")
 app.include_router(treatment_plans_router, prefix="/api/v1")
+app.include_router(billing_router, prefix="/api/v1")
