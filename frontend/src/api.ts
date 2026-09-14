@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentInput, AuthenticatedUser, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, LoginResponse, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, Professional, Treatment, TreatmentInput } from './types';
+import type { Appointment, AppointmentInput, AuthenticatedUser, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, LoginResponse, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, Professional, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -58,6 +58,10 @@ export const api = {
   recordOdontogramEvent: (id:string,input:OdontogramEventInput) => request<OdontogramEvent>(`/patients/${id}/odontogram/events`,{method:'POST',body:JSON.stringify(input)}),
   treatments: () => request<Treatment[]>('/treatments'),
   createTreatment: (input:TreatmentInput) => request<Treatment>('/treatments',{method:'POST',body:JSON.stringify(input)}),
+  treatmentPlans: (patientId:string) => request<TreatmentPlan[]>(`/patients/${patientId}/treatment-plans`),
+  createTreatmentPlan: (patientId:string,input:TreatmentPlanInput) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans`,{method:'POST',body:JSON.stringify(input)}),
+  addTreatmentPlanItem: (patientId:string,planId:string,input:TreatmentPlanItemInput) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans/${planId}/items`,{method:'POST',body:JSON.stringify(input)}),
+  changeTreatmentPlanStatus: (patientId:string,planId:string,status:TreatmentPlanStatus) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans/${planId}/status`,{method:'PATCH',body:JSON.stringify({status})}),
   professionals: () => request<Professional[]>('/professionals'),
   appointments: (from: string, to: string) => {
     const query = new URLSearchParams({ from: `${from}T00:00:00Z`, to: `${to}T23:59:59.999Z` });
