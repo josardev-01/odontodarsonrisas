@@ -9,6 +9,8 @@ from app.modules.audit import models as audit_models  # noqa: F401
 from app.modules.identity.api import router as identity_router
 from app.modules.identity import models as identity_models  # noqa: F401
 from app.modules.patients import models as patient_models  # noqa: F401
+from app.modules.odontogram import models as odontogram_models  # noqa: F401
+from app.modules.odontogram.api import router as odontogram_router
 from app.modules.patients.api import router as patients_router
 from app.modules.patients.clinical_api import router as clinical_router
 from app.modules.professionals import models as professional_models  # noqa: F401
@@ -16,6 +18,8 @@ from app.modules.professionals.api import router as professionals_router
 from app.modules.professionals.models import Professional
 from app.modules.scheduling import models as scheduling_models  # noqa: F401
 from app.modules.scheduling.api import router as scheduling_router
+from app.modules.treatments import models as treatment_models  # noqa: F401
+from app.modules.treatments.api import router as treatments_router
 from app.platform.config import get_settings
 from app.platform.database import Base, SessionFactory, engine
 from app.platform.errors import install_error_handlers
@@ -75,5 +79,7 @@ async def ready():
 app.include_router(identity_router, prefix="/api/v1")
 app.include_router(patients_router, prefix="/api/v1")
 app.include_router(clinical_router, prefix="/api/v1")
+app.include_router(odontogram_router, prefix="/api/v1")
 app.include_router(professionals_router, prefix="/api/v1")
 app.include_router(scheduling_router, prefix="/api/v1")
+app.include_router(treatments_router, prefix="/api/v1")
