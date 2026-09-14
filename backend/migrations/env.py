@@ -6,9 +6,11 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.modules.audit.models import AuditEvent  # noqa: F401
 from app.modules.identity.models import User, UserSession  # noqa: F401
+from app.modules.odontogram.models import OdontogramEvent  # noqa: F401
 from app.modules.patients.models import ClinicalEntry, ClinicalProfile, ConsentRecord, Patient  # noqa: F401
 from app.modules.professionals.models import Professional  # noqa: F401
 from app.modules.scheduling.models import Appointment  # noqa: F401
+from app.modules.treatments.models import Treatment  # noqa: F401
 from app.platform.config import get_settings
 from app.platform.database import Base
 

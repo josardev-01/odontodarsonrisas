@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentInput, AuthenticatedUser, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, LoginResponse, Patient, PatientInput, Professional } from './types';
+import type { Appointment, AppointmentInput, AuthenticatedUser, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, LoginResponse, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, Professional, Treatment, TreatmentInput } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -53,6 +53,11 @@ export const api = {
   createClinicalEntry: (id:string,input:ClinicalEntryInput) => request<ClinicalEntry>(`/patients/${id}/clinical-entries`,{method:'POST',body:JSON.stringify(input)}),
   consents: (id:string) => request<ConsentRecord[]>(`/patients/${id}/consents`),
   createConsent: (id:string,input:ConsentInput) => request<ConsentRecord>(`/patients/${id}/consents`,{method:'POST',body:JSON.stringify(input)}),
+  odontogramCurrent: (id:string) => request<OdontogramEvent[]>(`/patients/${id}/odontogram/current`),
+  odontogramHistory: (id:string) => request<OdontogramEvent[]>(`/patients/${id}/odontogram/history`),
+  recordOdontogramEvent: (id:string,input:OdontogramEventInput) => request<OdontogramEvent>(`/patients/${id}/odontogram/events`,{method:'POST',body:JSON.stringify(input)}),
+  treatments: () => request<Treatment[]>('/treatments'),
+  createTreatment: (input:TreatmentInput) => request<Treatment>('/treatments',{method:'POST',body:JSON.stringify(input)}),
   professionals: () => request<Professional[]>('/professionals'),
   appointments: (from: string, to: string) => {
     const query = new URLSearchParams({ from: `${from}T00:00:00Z`, to: `${to}T23:59:59.999Z` });

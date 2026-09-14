@@ -7,10 +7,12 @@ Scaffold inicial para la aplicacion web de la clinica odontologica. La infraestr
 - Pacientes: alta, listado y perfil personal ampliado.
 - Historia clinica: antecedentes medicos actualizables y entradas cronologicas inmutables.
 - Consentimientos: registro versionado de la evidencia firmada y ubicacion del original.
+- Odontograma: numeracion FDI, estados por pieza o superficie e historial inmutable.
+- Tratamientos: catalogo con codigo, categoria y precio referencial en PYG.
 - Agenda: creacion, consulta y proteccion contra colisiones de citas.
 - Identidad: sesiones seguras para personal y permisos por rol.
 
-Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el perfil personal y consentimientos; administracion y profesionales tambien acceden a antecedentes e historia clinica. El odontograma se implementara sobre este modelo en un incremento posterior.
+Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el perfil personal y consentimientos; administracion y profesionales tambien acceden a antecedentes, historia clinica y odontograma. El catalogo de tratamientos puede consultarse por todo el personal y solo administracion crea registros.
 
 ## Estado de las decisiones
 
