@@ -3,8 +3,9 @@ import { api, ApiError } from './api';
 import type { Appointment, AppointmentInput, AuthenticatedUser, Patient, PatientInput, Professional } from './types';
 import { PatientDetail } from './PatientDetail';
 import { TreatmentCatalog } from './TreatmentCatalog';
+import { AdminDashboard } from './AdminDashboard';
 
-type View = 'patients' | 'appointments' | 'treatments';
+type View = 'patients' | 'appointments' | 'treatments' | 'dashboard';
 const toDateInput = (date: Date) => date.toISOString().slice(0, 10);
 export function initialRange() {
   const from = new Date(); from.setDate(from.getDate() - 7);
@@ -106,6 +107,6 @@ export function App() {
   async function createPatient(input:PatientInput){setError('');try{const result=await api.createPatient(input);setPatients((items)=>[...items,result]);}catch(reason){handleError(reason);throw reason;}}
   async function createAppointment(input:AppointmentInput){setError('');try{const result=await api.createAppointment(input);setAppointments((items)=>[...items,result]);}catch(reason){handleError(reason);throw reason;}}
   return <div className="app-shell"><header className="topbar"><a className="brand" href="#contenido">Dar Sonrisas</a><span className="identity">{user.display_name} · {user.roles.join(', ')}</span><button className="button-secondary" onClick={logout}>Cerrar sesión</button></header>
-    <div className="workspace"><nav aria-label="Secciones principales"><button aria-current={view==='patients'?'page':undefined} onClick={()=>{setView('patients');setSelectedPatient(null);}}>Pacientes</button>{!user.roles.includes('profesional')&&<button aria-current={view==='appointments'?'page':undefined} onClick={()=>{setView('appointments');setSelectedPatient(null);}}>Agenda</button>}<button aria-current={view==='treatments'?'page':undefined} onClick={()=>{setView('treatments');setSelectedPatient(null);}}>Tratamientos</button></nav>
-      <main id="contenido"><ErrorNotice message={error}/>{selectedPatient?<PatientDetail patient={selectedPatient} user={user} onBack={()=>setSelectedPatient(null)}/>:view==='patients'?<Patients items={patients} onCreate={createPatient} onOpen={setSelectedPatient} canCreate={!user.roles.includes('profesional')}/>:view==='treatments'?<TreatmentCatalog user={user}/>:<Appointments items={appointments} patients={patients} professionals={professionals} range={range} onRange={setRange} onCreate={createAppointment}/>}</main></div></div>;
+    <div className="workspace"><nav aria-label="Secciones principales"><button aria-current={view==='patients'?'page':undefined} onClick={()=>{setView('patients');setSelectedPatient(null);}}>Pacientes</button>{!user.roles.includes('profesional')&&<button aria-current={view==='appointments'?'page':undefined} onClick={()=>{setView('appointments');setSelectedPatient(null);}}>Agenda</button>}<button aria-current={view==='treatments'?'page':undefined} onClick={()=>{setView('treatments');setSelectedPatient(null);}}>Tratamientos</button>{user.roles.includes('admin')&&<button aria-current={view==='dashboard'?'page':undefined} onClick={()=>{setView('dashboard');setSelectedPatient(null);}}>Panel administrativo</button>}</nav>
+      <main id="contenido"><ErrorNotice message={error}/>{selectedPatient?<PatientDetail patient={selectedPatient} user={user} onBack={()=>setSelectedPatient(null)}/>:view==='patients'?<Patients items={patients} onCreate={createPatient} onOpen={setSelectedPatient} canCreate={!user.roles.includes('profesional')}/>:view==='treatments'?<TreatmentCatalog user={user}/>:view==='dashboard'?<AdminDashboard/>:<Appointments items={appointments} patients={patients} professionals={professionals} range={range} onRange={setRange} onCreate={createAppointment}/>}</main></div></div>;
 }
