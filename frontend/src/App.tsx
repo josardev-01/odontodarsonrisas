@@ -4,6 +4,7 @@ import type { Appointment, AppointmentInput, AuthenticatedUser, Patient, Patient
 import { PatientDetail } from './PatientDetail';
 import { TreatmentCatalog } from './TreatmentCatalog';
 import { AdminDashboard } from './AdminDashboard';
+import { PublicSite } from './PublicSite';
 
 type View = 'patients' | 'appointments' | 'treatments' | 'dashboard';
 const toDateInput = (date: Date) => date.toISOString().slice(0, 10);
@@ -20,7 +21,7 @@ function ErrorNotice({ message }: { message: string }) {
   return message ? <div className="notice notice--error" role="alert">{message}</div> : null;
 }
 
-function Login({ error, onLogin }: { error: string; onLogin: (email: string, password: string) => Promise<void> }) {
+function Login({ error, onLogin, onBack }: { error: string; onLogin: (email: string, password: string) => Promise<void>; onBack:()=>void }) {
   const [localError, setLocalError] = useState('');
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -30,7 +31,7 @@ function Login({ error, onLogin }: { error: string; onLogin: (email: string, pas
     catch (reason) { setLocalError(reason instanceof ApiError ? reason.message : 'No fue posible conectar con el servicio.'); }
     finally { setBusy(false); }
   }
-  return <main id="contenido" className="login-shell"><section className="card login-card" aria-labelledby="login-title">
+  return <main id="contenido" className="login-shell"><section className="card login-card" aria-labelledby="login-title"><button type="button" className="login-back" onClick={onBack}>← Volver al sitio público</button>
     <p className="eyebrow">Acceso para personal</p><h1 id="login-title">Dar Sonrisas</h1>
     <p>Ingresá con la cuenta asignada por la clínica.</p><ErrorNotice message={localError || error} />
     <form onSubmit={submit} className="form-stack">
@@ -92,6 +93,7 @@ function Appointments({ items, patients, professionals, range, onRange, onCreate
 }
 
 export function App() {
+  const [siteView,setSiteView]=useState<'public'|'staff'>('public');
   const [user,setUser]=useState<AuthenticatedUser|null>(null); const [checking,setChecking]=useState(true); const [loginError,setLoginError]=useState('');
   const [view,setView]=useState<View>('patients'); const [patients,setPatients]=useState<Patient[]>([]); const [professionals,setProfessionals]=useState<Professional[]>([]); const [appointments,setAppointments]=useState<Appointment[]>([]);
   const [selectedPatient,setSelectedPatient]=useState<Patient|null>(null);
@@ -101,12 +103,13 @@ export function App() {
   useEffect(()=>{if(!user||!canManageClinic(user))return;setError('');if(user.roles.includes('profesional')){api.patients().then(setPatients).catch(handleError);return;}Promise.all([api.patients(),api.professionals(),api.appointments(range.from,range.to)]).then(([p,pro,a])=>{setPatients(p);setProfessionals(pro);setAppointments(a);}).catch(handleError);},[user,range,handleError]);
   async function login(email:string,password:string){const result=await api.login(email,password);setLoginError('');setUser(result.user);}
   async function logout(){try{await api.logout();}catch(reason){if(!(reason instanceof ApiError&&reason.status===401)){handleError(reason);return;}}setUser(null);setLoginError('');setError('');}
+  if(siteView==='public')return <PublicSite onStaffAccess={()=>setSiteView('staff')}/>;
   if(checking)return <main id="contenido" className="login-shell" aria-busy="true"><p>Verificando sesión…</p></main>;
-  if(!user)return <Login error={loginError} onLogin={login}/>;
+  if(!user)return <Login error={loginError} onLogin={login} onBack={()=>setSiteView('public')}/>;
   if(!canManageClinic(user))return <div className="app-shell"><header className="topbar"><span className="brand">Dar Sonrisas</span><button className="button-secondary" onClick={logout}>Cerrar sesión</button></header><main id="contenido" className="restricted"><h1>Acceso limitado</h1><p>Tu rol no tiene funciones habilitadas en este incremento.</p></main></div>;
   async function createPatient(input:PatientInput){setError('');try{const result=await api.createPatient(input);setPatients((items)=>[...items,result]);}catch(reason){handleError(reason);throw reason;}}
   async function createAppointment(input:AppointmentInput){setError('');try{const result=await api.createAppointment(input);setAppointments((items)=>[...items,result]);}catch(reason){handleError(reason);throw reason;}}
-  return <div className="app-shell"><header className="topbar"><a className="brand" href="#contenido">Dar Sonrisas</a><span className="identity">{user.display_name} · {user.roles.join(', ')}</span><button className="button-secondary" onClick={logout}>Cerrar sesión</button></header>
+  return <div className="app-shell"><a className="skip-link" href="#contenido">Saltar al contenido</a><header className="topbar"><a className="brand" href="#contenido">Dar Sonrisas</a><button className="button-secondary" onClick={()=>setSiteView('public')}>Sitio público</button><span className="identity">{user.display_name} · {user.roles.join(', ')}</span><button className="button-secondary" onClick={logout}>Cerrar sesión</button></header>
     <div className="workspace"><nav aria-label="Secciones principales"><button aria-current={view==='patients'?'page':undefined} onClick={()=>{setView('patients');setSelectedPatient(null);}}>Pacientes</button>{!user.roles.includes('profesional')&&<button aria-current={view==='appointments'?'page':undefined} onClick={()=>{setView('appointments');setSelectedPatient(null);}}>Agenda</button>}<button aria-current={view==='treatments'?'page':undefined} onClick={()=>{setView('treatments');setSelectedPatient(null);}}>Tratamientos</button>{user.roles.includes('admin')&&<button aria-current={view==='dashboard'?'page':undefined} onClick={()=>{setView('dashboard');setSelectedPatient(null);}}>Panel administrativo</button>}</nav>
       <main id="contenido"><ErrorNotice message={error}/>{selectedPatient?<PatientDetail patient={selectedPatient} user={user} onBack={()=>setSelectedPatient(null)}/>:view==='patients'?<Patients items={patients} onCreate={createPatient} onOpen={setSelectedPatient} canCreate={!user.roles.includes('profesional')}/>:view==='treatments'?<TreatmentCatalog user={user}/>:view==='dashboard'?<AdminDashboard/>:<Appointments items={appointments} patients={patients} professionals={professionals} range={range} onRange={setRange} onCreate={createAppointment}/>}</main></div></div>;
 }
