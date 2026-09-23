@@ -50,3 +50,7 @@ class AppointmentReschedule(BaseModel):
         if self.starts_at >= self.ends_at:
             raise ValueError("starts_at must be before ends_at")
         return self
+
+
+class AppointmentStatusUpdate(BaseModel):
+    status: AppointmentStatus

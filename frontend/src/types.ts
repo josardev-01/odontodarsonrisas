@@ -16,10 +16,15 @@ export type Patient = {
   occupation?: string | null;
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
+  active: boolean;
+  created_at: string;
 };
-export type PatientInput = Omit<Patient, 'id'>;
+export type PatientInput = Omit<Patient, 'id'|'active'|'created_at'>;
+export type PatientUpdate = Omit<PatientInput,'document_type'|'document_number'> & {active?:boolean};
 
-export type Professional = { id: string; display_name: string; specialty: string };
+export type Professional = { id: string; display_name: string; specialty: string; active: boolean; created_at: string };
+export type ProfessionalInput = Pick<Professional, 'display_name'|'specialty'>;
+export type ProfessionalUpdate = Partial<Pick<Professional, 'display_name'|'specialty'|'active'>>;
 
 export type Appointment = {
   id: string;
@@ -28,8 +33,13 @@ export type Appointment = {
   starts_at: string;
   ends_at: string;
   reason?: string | null;
+  status: 'scheduled'|'cancelled'|'completed';
+  created_at: string;
 };
-export type AppointmentInput = Omit<Appointment, 'id'>;
+export type AppointmentInput = Omit<Appointment, 'id'|'status'|'created_at'>;
+export type StaffUser = {id:string;email:string;display_name:string;role:StaffRole;active:boolean};
+export type StaffUserInput = {email:string;display_name:string;password:string;role:Exclude<StaffRole,'paciente'>};
+export type AuditEvent = {id:string;actor_id:string;action:string;resource_type:string;resource_id?:string|null;outcome:string;occurred_at:string};
 
 export type ClinicalProfile = {
   id: string;

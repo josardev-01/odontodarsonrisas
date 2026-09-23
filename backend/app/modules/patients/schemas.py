@@ -37,3 +37,4 @@ class PatientUpdate(BaseModel):
     occupation: str | None = Field(default=None, max_length=120)
     emergency_contact_name: str | None = Field(default=None, max_length=160)
     emergency_contact_phone: str | None = Field(default=None, max_length=40)
+    active: bool | None = None

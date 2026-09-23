@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentInput, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, Invoice, LoginResponse, NotificationChannel, NotificationConsent, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, PatientNotification, PaymentInput, Professional, ReportSummary, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
+import type { Appointment, AppointmentInput, AuditEvent, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, Invoice, LoginResponse, NotificationChannel, NotificationConsent, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, PatientNotification, PatientUpdate, PaymentInput, Professional, ProfessionalInput, ProfessionalUpdate, ReportSummary, StaffUser, StaffUserInput, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -44,8 +44,9 @@ export const api = {
   login: (email: string, password: string) => request<LoginResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   me: () => request<AuthenticatedUser>('/auth/me'),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
-  patients: () => request<Patient[]>('/patients'),
+  patients: (query='') => request<Patient[]>(`/patients${query?`?${new URLSearchParams({query})}`:''}`),
   createPatient: (input: PatientInput) => request<Patient>('/patients', { method: 'POST', body: JSON.stringify(input) }),
+  updatePatient: (id:string,input:PatientUpdate) => request<Patient>(`/patients/${id}`,{method:'PUT',body:JSON.stringify(input)}),
   patient: (id: string) => request<Patient>(`/patients/${id}`),
   clinicalProfile: (id: string) => request<ClinicalProfile|null>(`/patients/${id}/clinical-profile`),
   saveClinicalProfile: (id: string, input: ClinicalProfileInput) => request<ClinicalProfile>(`/patients/${id}/clinical-profile`, { method:'PUT', body:JSON.stringify(input) }),
@@ -74,10 +75,19 @@ export const api = {
   notifications: (patientId:string) => request<PatientNotification[]>(`/patients/${patientId}/notifications`),
   createNotification: (patientId:string,channel:NotificationChannel,message:string) => request<PatientNotification>(`/patients/${patientId}/notifications`,{method:'POST',body:JSON.stringify({channel,message})}),
   cancelNotification: (patientId:string,notificationId:string) => request<PatientNotification>(`/patients/${patientId}/notifications/${notificationId}/cancel`,{method:'POST'}),
-  professionals: () => request<Professional[]>('/professionals'),
+  professionals: (includeInactive=false) => request<Professional[]>(`/professionals${includeInactive?'?include_inactive=true':''}`),
+  createProfessional: (input:ProfessionalInput) => request<Professional>('/professionals',{method:'POST',body:JSON.stringify(input)}),
+  updateProfessional: (id:string,input:ProfessionalUpdate) => request<Professional>(`/professionals/${id}`,{method:'PATCH',body:JSON.stringify(input)}),
   appointments: (from: string, to: string) => {
     const query = new URLSearchParams({ from: `${from}T00:00:00Z`, to: `${to}T23:59:59.999Z` });
     return request<Appointment[]>(`/appointments?${query}`);
   },
   createAppointment: (input: AppointmentInput) => request<Appointment>('/appointments', { method: 'POST', body: JSON.stringify(input) }),
+  rescheduleAppointment: (id:string,startsAt:string,endsAt:string) => request<Appointment>(`/appointments/${id}/schedule`,{method:'PATCH',body:JSON.stringify({starts_at:startsAt,ends_at:endsAt})}),
+  changeAppointmentStatus: (id:string,status:'cancelled'|'completed') => request<Appointment>(`/appointments/${id}/status`,{method:'PATCH',body:JSON.stringify({status})}),
+  staffUsers: () => request<StaffUser[]>('/auth/users'),
+  createStaffUser: (input:StaffUserInput) => request<AuthenticatedUser>('/auth/users',{method:'POST',body:JSON.stringify(input)}),
+  updateStaffUser: (id:string,input:Partial<Pick<StaffUser,'display_name'|'role'|'active'>>) => request<StaffUser>(`/auth/users/${id}`,{method:'PATCH',body:JSON.stringify(input)}),
+  resetStaffPassword: (id:string,password:string) => request<void>(`/auth/users/${id}/password`,{method:'POST',body:JSON.stringify({password})}),
+  auditEvents: (limit=50) => request<AuditEvent[]>(`/admin/audit-events?${new URLSearchParams({limit:String(limit)})}`),
 };

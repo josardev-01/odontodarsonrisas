@@ -12,7 +12,7 @@ from app.modules.identity.api import CurrentUser, require_roles
 from app.modules.patients.models import Patient
 from app.modules.professionals.models import Professional
 from app.modules.scheduling.models import Appointment, AppointmentStatus
-from app.modules.scheduling.schemas import AppointmentCreate, AppointmentRead, AppointmentReschedule
+from app.modules.scheduling.schemas import AppointmentCreate, AppointmentRead, AppointmentReschedule, AppointmentStatusUpdate
 from app.platform.database import get_session
 from app.platform.errors import ConflictError, NotFoundError
 
@@ -117,6 +117,33 @@ async def reschedule_appointment(
     except IntegrityError as exc:
         await session.rollback()
         raise ConflictError("The professional already has an appointment in that time window") from exc
+    await session.refresh(appointment)
+    return appointment
+
+
+@router.patch("/{appointment_id}/status", response_model=AppointmentRead)
+async def change_appointment_status(
+    appointment_id: UUID,
+    payload: AppointmentStatusUpdate,
+    user: Staff,
+    session: Db,
+) -> Appointment:
+    appointment = await session.get(Appointment, appointment_id)
+    if appointment is None:
+        raise NotFoundError("Appointment not found")
+    if appointment.status != AppointmentStatus.SCHEDULED:
+        raise ConflictError("Only scheduled appointments can change status")
+    if payload.status not in {AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED}:
+        raise ConflictError("A scheduled appointment can only be cancelled or completed")
+    appointment.status = payload.status
+    record_event(
+        session,
+        actor_id=str(user.id),
+        action=f"appointment.{payload.status.value}",
+        resource_type="appointment",
+        resource_id=appointment.id,
+    )
+    await session.commit()
     await session.refresh(appointment)
     return appointment
 

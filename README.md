@@ -10,6 +10,9 @@ Scaffold inicial para la aplicacion web de la clinica odontologica. La infraestr
 - Odontograma: numeracion FDI, estados por pieza o superficie e historial inmutable.
 - Tratamientos: catalogo con codigo, categoria y precio referencial en PYG.
 - Agenda: creacion, consulta y proteccion contra colisiones de citas.
+- Agenda operativa: reprogramacion, cancelacion y finalizacion auditadas.
+- Profesionales: alta, edicion y activacion o desactivacion logica.
+- Usuarios internos: alta, roles, activacion, cambio de contrasena y revocacion de sesiones.
 - Identidad: sesiones seguras para personal y permisos por rol.
 
 Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el perfil personal y consentimientos; administracion y profesionales tambien acceden a antecedentes, historia clinica, odontograma y planes de tratamiento con presupuestos en PYG. El catalogo de tratamientos puede consultarse por todo el personal y solo administracion crea registros.
@@ -19,6 +22,8 @@ Administracion y recepcion pueden emitir comprobantes internos desde planes acep
 Administracion y recepcion pueden registrar autorizaciones y preparar notificaciones exclusivamente por WhatsApp o SMS. Los mensajes quedan en una cola persistente hasta configurar un proveedor externo; no se simula un envio real. Revocar una autorizacion cancela los mensajes pendientes de ese canal.
 
 El panel administrativo presenta metricas agregadas de pacientes, citas, cobros, saldos y comprobantes. Solo administracion puede consultarlo y los reportes no exponen datos clinicos identificables.
+
+El checklist de cierre funcional y los bloqueos para usar datos reales se mantienen en `docs/MVP_CHECKLIST.md`.
 
 ## Estado de las decisiones
 
