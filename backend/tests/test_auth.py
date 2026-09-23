@@ -56,3 +56,50 @@ async def test_admin_can_create_staff_but_not_patient_portal_user(client, auth_h
         },
     )
     assert patient.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_admin_lists_updates_and_resets_staff_access(client, auth_headers):
+    created = await client.post(
+        "/api/v1/auth/users",
+        headers=auth_headers,
+        json={"email":"staff-management@example.com","display_name":"Staff Gestion","password":"synthetic-original-password","role":"recepcion"},
+    )
+    assert created.status_code == 201
+    user_id = created.json()["id"]
+    listed = await client.get("/api/v1/auth/users", headers=auth_headers)
+    assert listed.status_code == 200
+    assert user_id in {item["id"] for item in listed.json()}
+
+    changed = await client.patch(
+        f"/api/v1/auth/users/{user_id}",
+        headers=auth_headers,
+        json={"display_name":"Profesional Gestion","role":"profesional"},
+    )
+    assert changed.status_code == 200
+    assert changed.json()["role"] == "profesional"
+
+    reset = await client.post(
+        f"/api/v1/auth/users/{user_id}/password",
+        headers=auth_headers,
+        json={"password":"synthetic-replacement-password"},
+    )
+    assert reset.status_code == 204
+    old_login = await client.post("/api/v1/auth/login", json={"email":"staff-management@example.com","password":"synthetic-original-password"})
+    assert old_login.status_code == 401
+    new_login = await client.post("/api/v1/auth/login", json={"email":"staff-management@example.com","password":"synthetic-replacement-password"})
+    assert new_login.status_code == 200
+
+    admin_login = await client.post("/api/v1/auth/login", json={"email":"admin@example.com","password":"synthetic-password-only-for-tests"})
+    admin_headers = {"X-CSRF-Token":admin_login.json()["csrf_token"]}
+    disabled = await client.patch(f"/api/v1/auth/users/{user_id}", headers=admin_headers, json={"active":False})
+    assert disabled.status_code == 200
+    assert disabled.json()["active"] is False
+    assert (await client.post("/api/v1/auth/login", json={"email":"staff-management@example.com","password":"synthetic-replacement-password"})).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_cannot_deactivate_self(client, auth_headers):
+    me = (await client.get("/api/v1/auth/me")).json()
+    response = await client.patch(f"/api/v1/auth/users/{me['id']}", headers=auth_headers, json={"active":False})
+    assert response.status_code == 409

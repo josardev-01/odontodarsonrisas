@@ -44,7 +44,7 @@ async def list_patients(
     statement = select(Patient).order_by(Patient.last_name, Patient.first_name).limit(limit)
     if query:
         pattern = f"%{query}%"
-        statement = statement.where(or_(Patient.first_name.ilike(pattern), Patient.last_name.ilike(pattern)))
+        statement = statement.where(or_(Patient.first_name.ilike(pattern), Patient.last_name.ilike(pattern), Patient.document_number.ilike(pattern)))
     return list((await session.scalars(statement)).all())
 
 
@@ -64,6 +64,8 @@ async def update_patient(patient_id: UUID, payload: PatientUpdate, user: Staff, 
     if patient is None:
         raise NotFoundError("Patient not found")
     for key, value in payload.model_dump().items():
+        if key == "active" and value is None:
+            continue
         setattr(patient, key, value)
     record_event(session, actor_id=str(user.id), action="patient.updated", resource_type="patient", resource_id=patient.id)
     await session.commit()

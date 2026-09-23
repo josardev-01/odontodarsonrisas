@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr, Field, SecretStr
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -46,6 +46,24 @@ class StaffUserCreate(BaseModel):
     role: UserRole
 
 
+class StaffUserRead(BaseModel):
+    id: UUID
+    email: EmailStr
+    display_name: str
+    role: UserRole
+    active: bool
+
+
+class StaffUserUpdate(BaseModel):
+    display_name: str | None = Field(default=None, min_length=1, max_length=100)
+    role: UserRole | None = None
+    active: bool | None = None
+
+
+class StaffPasswordReset(BaseModel):
+    password: SecretStr = Field(min_length=12, max_length=200)
+
+
 class SessionResponse(BaseModel):
     user: CurrentUser
     csrf_token: str
@@ -53,6 +71,10 @@ class SessionResponse(BaseModel):
 
 def public_user(user: User) -> CurrentUser:
     return CurrentUser(id=user.id, display_name=user.display_name, email=user.email, roles=[user.role])
+
+
+def staff_user(user: User) -> StaffUserRead:
+    return StaffUserRead(id=user.id, display_name=user.display_name, email=user.email, role=user.role, active=user.active)
 
 
 def expired(value) -> bool:
@@ -191,3 +213,56 @@ async def create_staff_user(
     await session.commit()
     await session.refresh(user)
     return public_user(user)
+
+
+@router.get("/users", response_model=list[StaffUserRead])
+async def list_staff_users(
+    admin: Annotated[CurrentUser, Depends(require_roles(UserRole.ADMIN))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[StaffUserRead]:
+    users = (await session.scalars(select(User).where(User.role != UserRole.PACIENTE).order_by(User.display_name))).all()
+    return [staff_user(user) for user in users]
+
+
+@router.patch("/users/{user_id}", response_model=StaffUserRead)
+async def update_staff_user(
+    user_id: UUID,
+    payload: StaffUserUpdate,
+    admin: Annotated[CurrentUser, Depends(require_roles(UserRole.ADMIN))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> StaffUserRead:
+    user = await session.get(User, user_id)
+    if user is None or user.role == UserRole.PACIENTE:
+        raise HTTPException(status_code=404, detail="Staff user not found")
+    changes = payload.model_dump(exclude_unset=True)
+    if changes.get("role") == UserRole.PACIENTE:
+        raise HTTPException(status_code=422, detail="Patient accounts are deferred to V2")
+    if user.id == admin.id and (changes.get("active") is False or changes.get("role") not in {None, UserRole.ADMIN}):
+        raise HTTPException(status_code=409, detail="The current administrator cannot remove their own access")
+    security_change = "role" in changes or changes.get("active") is False
+    if "display_name" in changes:
+        changes["display_name"] = changes["display_name"].strip()
+    for field, value in changes.items():
+        setattr(user, field, value)
+    if security_change:
+        await session.execute(update(UserSession).where(UserSession.user_id == user.id, UserSession.revoked_at.is_(None)).values(revoked_at=utc_now()))
+    record_event(session, actor_id=str(admin.id), action="user.updated", resource_type="user", resource_id=user.id)
+    await session.commit()
+    await session.refresh(user)
+    return staff_user(user)
+
+
+@router.post("/users/{user_id}/password", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_staff_password(
+    user_id: UUID,
+    payload: StaffPasswordReset,
+    admin: Annotated[CurrentUser, Depends(require_roles(UserRole.ADMIN))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> None:
+    user = await session.get(User, user_id)
+    if user is None or user.role == UserRole.PACIENTE:
+        raise HTTPException(status_code=404, detail="Staff user not found")
+    user.password_hash = hash_password(payload.password.get_secret_value())
+    await session.execute(update(UserSession).where(UserSession.user_id == user.id, UserSession.revoked_at.is_(None)).values(revoked_at=utc_now()))
+    record_event(session, actor_id=str(admin.id), action="user.password_reset", resource_type="user", resource_id=user.id)
+    await session.commit()
