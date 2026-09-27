@@ -9,7 +9,7 @@ from app.modules.billing.models import Invoice, Payment  # noqa: F401
 from app.modules.identity.models import User, UserSession  # noqa: F401
 from app.modules.notifications.models import Notification, NotificationConsent  # noqa: F401
 from app.modules.odontogram.models import OdontogramEvent  # noqa: F401
-from app.modules.patients.models import ClinicalEntry, ClinicalProfile, ConsentRecord, Patient  # noqa: F401
+from app.modules.patients.models import ClinicalEntry, ClinicalHistoryDocument, ClinicalProfile, ConsentRecord, Patient  # noqa: F401
 from app.modules.professionals.models import Professional  # noqa: F401
 from app.modules.scheduling.models import Appointment  # noqa: F401
 from app.modules.treatments.models import Treatment  # noqa: F401

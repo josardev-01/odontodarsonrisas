@@ -1,0 +1,19 @@
+/* Secondary actions are used on light cards and in the dark staff header. */
+.button-secondary {
+  background: #e4f3f1;
+  color: #0d4e53;
+  border-color: #91bfba;
+}
+
+.topbar .button-secondary {
+  background: transparent;
+  color: #fff;
+  border-color: #a6cfcb;
+}
+
+.app-shell .form-grid button.button-secondary {
+  background: #e4f3f1;
+  color: #0d4e53;
+  border: 1px solid #91bfba;
+  box-shadow: none;
+}

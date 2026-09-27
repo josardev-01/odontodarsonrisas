@@ -5,8 +5,9 @@ Scaffold inicial para la aplicacion web de la clinica odontologica. La infraestr
 ## Modulos disponibles
 
 - Pacientes: alta, listado y perfil personal ampliado.
-- Historia clinica: antecedentes medicos actualizables y entradas cronologicas inmutables.
+- Historial clinico: adjunto del documento fisico firmado por el paciente desde su Perfil, con versiones conservadas en PostgreSQL.
 - Consentimientos: registro versionado de la evidencia firmada y ubicacion del original.
+- Adjuntos firmados: escaneos PDF/JPG/PNG de consentimientos y autorizaciones WhatsApp/SMS en PostgreSQL, con descarga limitada por rol y auditoria.
 - Odontograma: numeracion FDI, estados por pieza o superficie e historial inmutable.
 - Tratamientos: catalogo con codigo, categoria y precio referencial en PYG.
 - Agenda: creacion, consulta y proteccion contra colisiones de citas.
@@ -15,7 +16,7 @@ Scaffold inicial para la aplicacion web de la clinica odontologica. La infraestr
 - Usuarios internos: alta, roles, activacion, cambio de contrasena y revocacion de sesiones.
 - Identidad: sesiones seguras para personal y permisos por rol.
 
-Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el perfil personal y consentimientos; administracion y profesionales tambien acceden a antecedentes, historia clinica, odontograma y planes de tratamiento con presupuestos en PYG. El catalogo de tratamientos puede consultarse por todo el personal y solo administracion crea registros.
+Al seleccionar el nombre de un paciente se abre su expediente. Recepcion ve el perfil personal y consentimientos; administracion y profesionales tambien pueden adjuntar y descargar el historial clinico firmado desde Perfil, y acceden al odontograma y los planes de tratamiento con presupuestos en PYG. Los antecedentes y entradas clinicas previamente registrados permanecen en la base y sus API heredadas, pero ya no se editan desde la interfaz. El catalogo de tratamientos puede consultarse por todo el personal y solo administracion crea registros.
 
 Administracion y recepcion pueden emitir comprobantes internos desde planes aceptados y registrar pagos parciales o totales. Estos registros son control administrativo y no constituyen facturacion electronica tributaria.
 
@@ -24,6 +25,8 @@ Administracion y recepcion pueden registrar autorizaciones y preparar notificaci
 El panel administrativo presenta metricas agregadas de pacientes, citas, cobros, saldos y comprobantes. Solo administracion puede consultarlo y los reportes no exponen datos clinicos identificables.
 
 El checklist de cierre funcional y los bloqueos para usar datos reales se mantienen en `docs/MVP_CHECKLIST.md`.
+
+Los adjuntos firmados tienen un limite de 10 MB por archivo. El original fisico puede seguir registrandose como referencia opcional. La base de datos y sus copias de seguridad contienen ahora estos documentos sensibles; ver `docs/attachments.md`.
 
 ## Estado de las decisiones
 
