@@ -9,6 +9,7 @@ Este checklist define el cierre funcional del piloto interno. No equivale a auto
 - [x] Historial clínico firmado adjunto desde Perfil, consentimientos y odontograma. Los antecedentes y entradas anteriores se conservan como datos heredados.
 - [x] Adjuntos PDF/JPG/PNG de consentimientos y autorizaciones firmadas guardados en PostgreSQL, con descarga por rol.
 - [x] Catálogo de tratamientos, planes y presupuestos.
+- [x] Trabajos del odontograma vinculados al presupuesto y registro de evolución por procedimiento con Sí, No y Observación.
 - [x] Agenda con creación, reprogramación, cancelación y finalización.
 - [x] Gestión de profesionales activos e inactivos.
 - [x] Administración de usuarios y revocación de sesiones.
@@ -27,6 +28,7 @@ Este checklist define el cierre funcional del piloto interno. No equivale a auto
 - [x] Confirmar que los mensajes no contengan diagnósticos ni información clínica sensible.
 - [ ] Probar manualmente la carga y descarga de un documento sintético desde Consentimientos y Notificaciones.
 - [ ] Probar manualmente la carga y descarga de un historial clínico sintético firmado desde Pacientes > Perfil, con un usuario clínico.
+- [ ] Probar manualmente con datos sintéticos el recorrido Odontograma > presupuesto > Evolución > finalización y confirmar que el checklist responde al trabajo clínico real.
 
 ## Bloqueos antes de producción
 

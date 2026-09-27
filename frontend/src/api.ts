@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentInput, AuditEvent, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalHistoryDocument, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, Invoice, LoginResponse, NotificationChannel, NotificationConsent, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, PatientNotification, PatientUpdate, PaymentInput, Professional, ProfessionalInput, ProfessionalUpdate, ReportSummary, StaffUser, StaffUserInput, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
+import type { Appointment, AppointmentInput, AuditEvent, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalHistoryDocument, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, DentalCondition, EvolutionAnswer, EvolutionEntry, Invoice, LoginResponse, NotificationChannel, NotificationConsent, OdontogramEvent, OdontogramEventInput, OdontogramWorkItem, Patient, PatientInput, PatientNotification, PatientUpdate, PaymentInput, Professional, ProfessionalInput, ProfessionalUpdate, ReportSummary, StaffUser, StaffUserInput, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -94,10 +94,16 @@ export const api = {
   odontogramCurrent: (id:string) => request<OdontogramEvent[]>(`/patients/${id}/odontogram/current`),
   odontogramHistory: (id:string) => request<OdontogramEvent[]>(`/patients/${id}/odontogram/history`),
   recordOdontogramEvent: (id:string,input:OdontogramEventInput) => request<OdontogramEvent>(`/patients/${id}/odontogram/events`,{method:'POST',body:JSON.stringify(input)}),
+  odontogramWorkItems: (id:string) => request<OdontogramWorkItem[]>(`/patients/${id}/odontogram/work-items`),
+  evolutionEntries: (id:string) => request<EvolutionEntry[]>(`/patients/${id}/evolution/entries`),
+  recordEvolution: (id:string,workItemId:string,answers:EvolutionAnswer[],notes:string|null) => request<EvolutionEntry>(`/patients/${id}/evolution/work-items/${workItemId}/entries`,{method:'POST',body:JSON.stringify({answers,notes})}),
+  completeProcedure: (id:string,workItemId:string,resultCondition:DentalCondition,resultNote:string|null) => request<OdontogramWorkItem>(`/patients/${id}/evolution/work-items/${workItemId}/complete`,{method:'POST',body:JSON.stringify({result_condition:resultCondition,result_note:resultNote})}),
   treatments: () => request<Treatment[]>('/treatments'),
   createTreatment: (input:TreatmentInput) => request<Treatment>('/treatments',{method:'POST',body:JSON.stringify(input)}),
   treatmentPlans: (patientId:string) => request<TreatmentPlan[]>(`/patients/${patientId}/treatment-plans`),
   createTreatmentPlan: (patientId:string,input:TreatmentPlanInput) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans`,{method:'POST',body:JSON.stringify(input)}),
+  importOdontogramIntoPlan: (patientId:string,planId:string) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans/${planId}/import-odontogram`,{method:'POST'}),
+  changePlanItemPrice: (patientId:string,planId:string,itemId:string,unitPrice:string) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans/${planId}/items/${itemId}/price`,{method:'PATCH',body:JSON.stringify({unit_price:unitPrice})}),
   addTreatmentPlanItem: (patientId:string,planId:string,input:TreatmentPlanItemInput) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans/${planId}/items`,{method:'POST',body:JSON.stringify(input)}),
   changeTreatmentPlanStatus: (patientId:string,planId:string,status:TreatmentPlanStatus) => request<TreatmentPlan>(`/patients/${patientId}/treatment-plans/${planId}/status`,{method:'PATCH',body:JSON.stringify({status})}),
   invoices: (patientId:string) => request<Invoice[]>(`/patients/${patientId}/invoices`),

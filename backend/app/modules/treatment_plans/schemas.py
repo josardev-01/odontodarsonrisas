@@ -12,6 +12,7 @@ class PlanCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     clinical_notes: str | None = Field(default=None, max_length=4000)
     valid_until: date | None = None
+    from_odontogram: bool = False
 
 
 class PlanItemCreate(BaseModel):
@@ -32,6 +33,7 @@ class PlanItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     treatment_id: UUID
+    work_item_id: UUID | None
     tooth_code: str | None
     treatment_code: str
     description: str
@@ -66,3 +68,7 @@ class PlanRead(BaseModel):
 
 class PlanStatusChange(BaseModel):
     status: PlanStatus
+
+
+class PlanItemPriceChange(BaseModel):
+    unit_price: Decimal = Field(ge=0, decimal_places=0, max_digits=14)

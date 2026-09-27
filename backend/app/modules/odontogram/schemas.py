@@ -48,3 +48,20 @@ class OdontogramEventRead(BaseModel):
     note: str | None
     treatment_id: UUID | None
     created_at: datetime
+
+
+class OdontogramWorkItemRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    patient_id: UUID
+    source_event_id: UUID
+    tooth_code: str
+    surface: ToothSurface
+    treatment_id: UUID
+    treatment_code: str
+    treatment_name: str
+    current_plan_id: UUID | None
+    completed_at: datetime | None
+    completed_by: UUID | None
+    result_event_id: UUID | None
+    created_at: datetime
