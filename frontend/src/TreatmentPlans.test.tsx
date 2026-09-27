@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
@@ -17,8 +17,16 @@ describe('Planes vinculados al odontograma',()=>{
     expect(await screen.findByRole('heading',{name:'Trabajos activos disponibles (2)'})).toBeInTheDocument();
     expect(screen.getByText('Pieza 16 · Mesial · Restauración')).toBeInTheDocument();
     expect(screen.getByText('Pieza 26 · Mesial · Restauración')).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText('Título'),'Presupuesto de prueba');
-    fireEvent.submit(screen.getByRole('button',{name:'Crear presupuesto con 2 trabajos'}).closest('form')!);
-    await waitFor(()=>expect(created).toHaveBeenCalledWith('patient-1',{title:'Presupuesto de prueba',clinical_notes:null,valid_until:null,from_odontogram:true}));
+    expect(screen.queryByRole('heading',{name:'Nuevo presupuesto'})).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button',{name:'Crear presupuesto con 2 trabajos'}));
+    await waitFor(()=>expect(created).toHaveBeenCalledWith('patient-1',{title:'Presupuesto odontograma 1',clinical_notes:null,valid_until:null,from_odontogram:true}));
+  });
+
+  it('no ofrece crear un presupuesto sin trabajos del odontograma',async()=>{
+    vi.spyOn(api,'treatmentPlans').mockResolvedValue([]);
+    vi.spyOn(api,'odontogramWorkItems').mockResolvedValue([]);
+    render(<TreatmentPlans patientId="patient-1"/>);
+    expect(await screen.findByText('Registrá primero los trabajos propuestos en Odontograma.')).toBeInTheDocument();
+    expect(screen.queryByRole('button',{name:/Crear presupuesto con/})).not.toBeInTheDocument();
   });
 });
