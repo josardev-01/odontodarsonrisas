@@ -55,6 +55,18 @@ class ClinicalEntryRead(ClinicalEntryBase):
     created_at: datetime
 
 
+class ClinicalHistoryDocumentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    patient_id: UUID
+    uploaded_by: UUID
+    created_at: datetime
+    attachment_filename: str
+    attachment_content_type: str
+    attachment_size: int
+    attachment_sha256: str
+
+
 class ConsentBase(BaseModel):
     consent_type: str = Field(min_length=1, max_length=80)
     document_version: str = Field(min_length=1, max_length=40)
@@ -62,7 +74,7 @@ class ConsentBase(BaseModel):
     signed_at: datetime
     signer_name: str = Field(min_length=1, max_length=160)
     signer_relationship: str | None = Field(default=None, max_length=80)
-    evidence_location: str = Field(min_length=1, max_length=300)
+    evidence_location: str | None = Field(default=None, max_length=300)
 
 
 class ConsentCreate(ConsentBase):
@@ -83,3 +95,7 @@ class ConsentRead(ConsentBase):
     status: ConsentStatus
     revoked_at: datetime | None
     created_at: datetime
+    attachment_filename: str | None
+    attachment_content_type: str | None
+    attachment_size: int | None
+    attachment_sha256: str | None

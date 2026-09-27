@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.platform.database import Base
@@ -26,11 +26,15 @@ class PaymentMethod(StrEnum):
 
 class Invoice(EntityMixin, Base):
     __tablename__ = "invoices"
+    __table_args__ = (
+        UniqueConstraint("treatment_plan_id", name="uq_invoices_treatment_plan_id"),
+        UniqueConstraint("number", name="uq_invoices_number"),
+    )
 
     patient_id: Mapped[UUID] = mapped_column(ForeignKey("patients.id", ondelete="RESTRICT"), index=True)
-    treatment_plan_id: Mapped[UUID] = mapped_column(ForeignKey("treatment_plans.id", ondelete="RESTRICT"), unique=True, index=True)
+    treatment_plan_id: Mapped[UUID] = mapped_column(ForeignKey("treatment_plans.id", ondelete="RESTRICT"), index=True)
     created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
-    number: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    number: Mapped[str] = mapped_column(String(32), index=True)
     description: Mapped[str] = mapped_column(String(200))
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 0))
     currency: Mapped[str] = mapped_column(String(3), default="PYG")

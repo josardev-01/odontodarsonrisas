@@ -2,8 +2,8 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, LargeBinary, String, Text
+from sqlalchemy.orm import Mapped, deferred, mapped_column
 
 from app.platform.database import Base
 from app.platform.types import EntityMixin
@@ -28,15 +28,19 @@ class NotificationStatus(StrEnum):
 
 class NotificationConsent(EntityMixin, Base):
     __tablename__ = "notification_consents"
-    __table_args__ = (UniqueConstraint("patient_id", "channel", name="uq_notification_consent_patient_channel"),)
-
+    __table_args__ = (Index("ix_notification_consents_patient_channel_created", "patient_id", "channel", "created_at"),)
     patient_id: Mapped[UUID] = mapped_column(ForeignKey("patients.id", ondelete="RESTRICT"), index=True)
     channel: Mapped[NotificationChannel] = mapped_column(Enum(NotificationChannel, native_enum=False, length=20))
     status: Mapped[ConsentStatus] = mapped_column(Enum(ConsentStatus, native_enum=False, length=20), default=ConsentStatus.GRANTED)
     granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     recorded_by: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
-    evidence_location: Mapped[str] = mapped_column(String(240))
+    evidence_location: Mapped[str | None] = mapped_column(String(240))
+    attachment_filename: Mapped[str | None] = mapped_column(String(180))
+    attachment_content_type: Mapped[str | None] = mapped_column(String(40))
+    attachment_size: Mapped[int | None]
+    attachment_sha256: Mapped[str | None] = mapped_column(String(64))
+    attachment_data: Mapped[bytes | None] = deferred(mapped_column(LargeBinary))
 
 
 class Notification(EntityMixin, Base):

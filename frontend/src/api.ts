@@ -1,4 +1,4 @@
-import type { Appointment, AppointmentInput, AuditEvent, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, Invoice, LoginResponse, NotificationChannel, NotificationConsent, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, PatientNotification, PatientUpdate, PaymentInput, Professional, ProfessionalInput, ProfessionalUpdate, ReportSummary, StaffUser, StaffUserInput, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
+import type { Appointment, AppointmentInput, AuditEvent, AuthenticatedUser, BillablePlan, ClinicalEntry, ClinicalEntryInput, ClinicalHistoryDocument, ClinicalProfile, ClinicalProfileInput, ConsentInput, ConsentRecord, Invoice, LoginResponse, NotificationChannel, NotificationConsent, OdontogramEvent, OdontogramEventInput, Patient, PatientInput, PatientNotification, PatientUpdate, PaymentInput, Professional, ProfessionalInput, ProfessionalUpdate, ReportSummary, StaffUser, StaffUserInput, Treatment, TreatmentInput, TreatmentPlan, TreatmentPlanInput, TreatmentPlanItemInput, TreatmentPlanStatus } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -13,6 +13,9 @@ export function messageForStatus(status: number): string {
   if (status === 401) return 'El correo o la contraseña no son válidos, o la sesión venció.';
   if (status === 403) return 'No tenés permiso para realizar esta acción.';
   if (status === 409) return 'La operación entra en conflicto con datos existentes. Revisá la fecha o los datos.';
+  if (status === 413) return 'El archivo supera el límite de 10 MB.';
+  if (status === 415) return 'Adjuntá un PDF, JPG o PNG válido.';
+  if (status === 422) return 'Revisá los datos y el formato del archivo adjunto.';
   return 'Ocurrió un error inesperado. Intentá nuevamente.';
 }
 
@@ -30,7 +33,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: 'include',
     headers: {
       Accept: 'application/json',
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(typeof init?.body === 'string' ? { 'Content-Type': 'application/json' } : {}),
       ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
       ...init?.headers,
     },
@@ -38,6 +41,34 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) throw new ApiError(response.status, messageForStatus(response.status));
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+function documentForm(metadata: object, attachment: File): FormData {
+  const form = new FormData();
+  form.append('metadata', JSON.stringify(metadata));
+  form.append('attachment', attachment);
+  return form;
+}
+
+async function requestDocument(path: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE}${path}`, { credentials: 'include', cache: 'no-store' });
+  if (!response.ok) throw new ApiError(response.status, messageForStatus(response.status));
+  return response.blob();
+}
+
+async function downloadDocument(path: string, filename: string): Promise<void> {
+  const blob = await requestDocument(path);
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 export const api = {
@@ -52,8 +83,14 @@ export const api = {
   saveClinicalProfile: (id: string, input: ClinicalProfileInput) => request<ClinicalProfile>(`/patients/${id}/clinical-profile`, { method:'PUT', body:JSON.stringify(input) }),
   clinicalEntries: (id: string) => request<ClinicalEntry[]>(`/patients/${id}/clinical-entries`),
   createClinicalEntry: (id:string,input:ClinicalEntryInput) => request<ClinicalEntry>(`/patients/${id}/clinical-entries`,{method:'POST',body:JSON.stringify(input)}),
+  clinicalHistoryDocuments: (id:string) => request<ClinicalHistoryDocument[]>(`/patients/${id}/clinical-history-documents`),
+  uploadClinicalHistoryDocument: (id:string,attachment:File) => {const form=new FormData();form.append('attachment',attachment);return request<ClinicalHistoryDocument>(`/patients/${id}/clinical-history-documents`,{method:'POST',body:form});},
+  downloadClinicalHistoryDocument: (id:string,documentId:string,filename:string) => downloadDocument(`/patients/${id}/clinical-history-documents/${documentId}/attachment`,filename),
   consents: (id:string) => request<ConsentRecord[]>(`/patients/${id}/consents`),
   createConsent: (id:string,input:ConsentInput) => request<ConsentRecord>(`/patients/${id}/consents`,{method:'POST',body:JSON.stringify(input)}),
+  createConsentWithAttachment: (id:string,input:ConsentInput,attachment:File) => request<ConsentRecord>(`/patients/${id}/consents/with-attachment`,{method:'POST',body:documentForm(input,attachment)}),
+  attachConsentDocument: (id:string,consentId:string,attachment:File) => {const form=new FormData();form.append('attachment',attachment);return request<ConsentRecord>(`/patients/${id}/consents/${consentId}/attachment`,{method:'PUT',body:form});},
+  downloadConsentDocument: (id:string,consentId:string,filename:string) => downloadDocument(`/patients/${id}/consents/${consentId}/attachment`,filename),
   odontogramCurrent: (id:string) => request<OdontogramEvent[]>(`/patients/${id}/odontogram/current`),
   odontogramHistory: (id:string) => request<OdontogramEvent[]>(`/patients/${id}/odontogram/history`),
   recordOdontogramEvent: (id:string,input:OdontogramEventInput) => request<OdontogramEvent>(`/patients/${id}/odontogram/events`,{method:'POST',body:JSON.stringify(input)}),
@@ -70,7 +107,10 @@ export const api = {
   cancelInvoice: (patientId:string,invoiceId:string) => request<Invoice>(`/patients/${patientId}/invoices/${invoiceId}/cancel`,{method:'POST'}),
   reportSummary: (from:string,to:string) => request<ReportSummary>(`/admin/reports/summary?${new URLSearchParams({from,to})}`),
   notificationConsents: (patientId:string) => request<NotificationConsent[]>(`/patients/${patientId}/notification-consents`),
-  grantNotificationConsent: (patientId:string,channel:NotificationChannel,grantedAt:string,evidenceLocation:string) => request<NotificationConsent>(`/patients/${patientId}/notification-consents`,{method:'POST',body:JSON.stringify({channel,granted_at:grantedAt,evidence_location:evidenceLocation})}),
+  grantNotificationConsent: (patientId:string,channel:NotificationChannel,grantedAt:string,evidenceLocation:string|null) => request<NotificationConsent>(`/patients/${patientId}/notification-consents`,{method:'POST',body:JSON.stringify({channel,granted_at:grantedAt,evidence_location:evidenceLocation})}),
+  grantNotificationConsentWithAttachment: (patientId:string,channel:NotificationChannel,grantedAt:string,evidenceLocation:string|null,attachment:File) => request<NotificationConsent>(`/patients/${patientId}/notification-consents/with-attachment`,{method:'POST',body:documentForm({channel,granted_at:grantedAt,evidence_location:evidenceLocation},attachment)}),
+  attachNotificationConsentDocument: (patientId:string,consentId:string,attachment:File) => {const form=new FormData();form.append('attachment',attachment);return request<NotificationConsent>(`/patients/${patientId}/notification-consents/${consentId}/attachment`,{method:'PUT',body:form});},
+  downloadNotificationConsentDocument: (patientId:string,consentId:string,filename:string) => downloadDocument(`/patients/${patientId}/notification-consents/${consentId}/attachment`,filename),
   revokeNotificationConsent: (patientId:string,channel:NotificationChannel) => request<NotificationConsent>(`/patients/${patientId}/notification-consents/${channel}/revoke`,{method:'POST'}),
   notifications: (patientId:string) => request<PatientNotification[]>(`/patients/${patientId}/notifications`),
   createNotification: (patientId:string,channel:NotificationChannel,message:string) => request<PatientNotification>(`/patients/${patientId}/notifications`,{method:'POST',body:JSON.stringify({channel,message})}),

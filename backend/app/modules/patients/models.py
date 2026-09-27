@@ -2,8 +2,8 @@ from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, JSON, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, JSON, LargeBinary, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, deferred, mapped_column, relationship
 
 from app.platform.database import Base
 from app.platform.types import EntityMixin
@@ -62,6 +62,18 @@ class ClinicalEntry(EntityMixin, Base):
     notes: Mapped[str] = mapped_column(Text)
 
 
+class ClinicalHistoryDocument(EntityMixin, Base):
+    __tablename__ = "clinical_history_documents"
+
+    patient_id: Mapped[UUID] = mapped_column(ForeignKey("patients.id", ondelete="RESTRICT"), index=True)
+    uploaded_by: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    attachment_filename: Mapped[str] = mapped_column(String(180))
+    attachment_content_type: Mapped[str] = mapped_column(String(40))
+    attachment_size: Mapped[int]
+    attachment_sha256: Mapped[str] = mapped_column(String(64))
+    attachment_data: Mapped[bytes] = deferred(mapped_column(LargeBinary, nullable=False))
+
+
 class ConsentStatus(StrEnum):
     ACTIVE = "active"
     REVOKED = "revoked"
@@ -77,7 +89,12 @@ class ConsentRecord(EntityMixin, Base):
     signed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     signer_name: Mapped[str] = mapped_column(String(160))
     signer_relationship: Mapped[str | None] = mapped_column(String(80))
-    evidence_location: Mapped[str] = mapped_column(String(300))
+    evidence_location: Mapped[str | None] = mapped_column(String(300))
+    attachment_filename: Mapped[str | None] = mapped_column(String(180))
+    attachment_content_type: Mapped[str | None] = mapped_column(String(40))
+    attachment_size: Mapped[int | None]
+    attachment_sha256: Mapped[str | None] = mapped_column(String(64))
+    attachment_data: Mapped[bytes | None] = deferred(mapped_column(LargeBinary))
     recorded_by: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     status: Mapped[ConsentStatus] = mapped_column(Enum(ConsentStatus, native_enum=False, length=20), default=ConsentStatus.ACTIVE)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

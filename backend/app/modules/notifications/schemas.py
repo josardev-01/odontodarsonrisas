@@ -12,7 +12,7 @@ PHONE_RE = re.compile(r"^\+[1-9]\d{7,14}$")
 class ConsentCreate(BaseModel):
     channel: NotificationChannel
     granted_at: datetime
-    evidence_location: str = Field(min_length=1, max_length=240)
+    evidence_location: str | None = Field(default=None, max_length=240)
 
 
 class ConsentRead(BaseModel):
@@ -24,7 +24,11 @@ class ConsentRead(BaseModel):
     granted_at: datetime
     revoked_at: datetime | None
     created_at: datetime
-    evidence_location: str
+    evidence_location: str | None
+    attachment_filename: str | None
+    attachment_content_type: str | None
+    attachment_size: int | None
+    attachment_sha256: str | None
 
 
 class NotificationCreate(BaseModel):

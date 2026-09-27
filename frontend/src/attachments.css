@@ -1,0 +1,16 @@
+.attachment-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .75rem;
+  margin-top: .75rem;
+}
+
+.attachment-form label {
+  flex: 1 1 16rem;
+  font-size: .85rem;
+}
+
+.attachment-form button {
+  flex: 0 0 auto;
+}
