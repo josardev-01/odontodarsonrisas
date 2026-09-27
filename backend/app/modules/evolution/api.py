@@ -7,10 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.audit.service import record_event
 from app.modules.evolution.models import EvolutionEntry
-from app.modules.evolution.schemas import CompleteProcedure, EvolutionEntryCreate, EvolutionEntryRead
+from app.modules.evolution.schemas import EvolutionEntryCreate, EvolutionEntryRead
 from app.modules.identity.api import CurrentUser, require_roles
-from app.modules.odontogram.models import OdontogramEvent, OdontogramWorkItem
-from app.modules.odontogram.schemas import OdontogramWorkItemRead
+from app.modules.odontogram.models import OdontogramWorkItem
 from app.modules.patients.models import Patient
 from app.modules.treatment_plans.models import PlanStatus, TreatmentPlan, TreatmentPlanItem
 from app.platform.database import get_session
@@ -69,43 +68,24 @@ async def record_evolution(patient_id: UUID, work_item_id: UUID, payload: Evolut
     plan, item = await active_plan_item(session, work)
     entry = EvolutionEntry(
         patient_id=patient_id, work_item_id=work.id, plan_item_id=item.id,
-        recorded_by=user.id, answers=[answer.model_dump() for answer in payload.answers], notes=payload.notes,
+        recorded_by=user.id, answers=[], control_completed=payload.control_completed,
+        notes=None if payload.control_completed else payload.notes.strip(),
     )
     session.add(entry)
     if plan.status == PlanStatus.ACCEPTED:
         plan.status = PlanStatus.IN_PROGRESS
+    if payload.control_completed:
+        work.completed_at = utc_now()
+        work.completed_by = user.id
+        others = await session.scalar(select(OdontogramWorkItem.id)
+            .where(OdontogramWorkItem.current_plan_id == plan.id, OdontogramWorkItem.id != work.id, OdontogramWorkItem.completed_at.is_(None))
+            .limit(1))
+        if others is None and all(plan_item.work_item_id is not None for plan_item in plan.items):
+            plan.status = PlanStatus.COMPLETED
     await session.flush()
     record_event(session, actor_id=str(user.id), action="evolution.recorded", resource_type="evolution_entry", resource_id=entry.id)
+    if payload.control_completed:
+        record_event(session, actor_id=str(user.id), action="evolution.procedure_completed", resource_type="odontogram_work_item", resource_id=work.id)
     await session.commit()
     await session.refresh(entry)
     return entry
-
-
-@router.post("/work-items/{work_item_id}/complete", response_model=OdontogramWorkItemRead)
-async def complete_procedure(patient_id: UUID, work_item_id: UUID, payload: CompleteProcedure, user: ClinicalStaff, session: Db):
-    work = await work_or_404(session, patient_id, work_item_id, lock=True)
-    plan, item = await active_plan_item(session, work)
-    latest = await session.scalar(select(EvolutionEntry)
-        .where(EvolutionEntry.work_item_id == work.id, EvolutionEntry.plan_item_id == item.id)
-        .order_by(EvolutionEntry.created_at.desc(), EvolutionEntry.id.desc()).limit(1))
-    if latest is None or any(answer["response"] != "yes" for answer in latest.answers):
-        raise ConflictError("The latest checklist must mark all steps Yes before completion")
-    result = OdontogramEvent(
-        patient_id=patient_id, recorded_by=user.id, tooth_code=work.tooth_code,
-        surface=work.surface, condition=payload.result_condition, observed_at=utc_now(),
-        note=payload.result_note, treatment_id=work.treatment_id,
-    )
-    session.add(result)
-    await session.flush()
-    work.completed_at = utc_now()
-    work.completed_by = user.id
-    work.result_event_id = result.id
-    others = await session.scalar(select(OdontogramWorkItem.id)
-        .where(OdontogramWorkItem.current_plan_id == plan.id, OdontogramWorkItem.id != work.id, OdontogramWorkItem.completed_at.is_(None))
-        .limit(1))
-    if others is None and all(item.work_item_id is not None for item in plan.items):
-        plan.status = PlanStatus.COMPLETED
-    record_event(session, actor_id=str(user.id), action="evolution.procedure_completed", resource_type="odontogram_work_item", resource_id=work.id)
-    await session.commit()
-    await session.refresh(work)
-    return work

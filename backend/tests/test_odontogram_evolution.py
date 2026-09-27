@@ -3,13 +3,6 @@ from datetime import datetime, timezone
 import pytest
 
 
-def checklist(response: str, note: str | None = None) -> dict:
-    return {"answers": [
-        {"step": step, "response": response, "observation": note}
-        for step in ("preparation", "procedure", "final_control")
-    ]}
-
-
 @pytest.mark.asyncio
 async def test_odontogram_work_populates_budget_and_evolution_closes_each_procedure(client, auth_headers):
     patient = await client.post("/api/v1/patients", headers=auth_headers, json={
@@ -61,25 +54,25 @@ async def test_odontogram_work_populates_budget_and_evolution_closes_each_proced
 
     evolution_base = f"/api/v1/patients/{patient_id}/evolution"
     first_work = work[0]["id"]
-    observed = await client.post(f"{evolution_base}/work-items/{first_work}/entries", headers=auth_headers, json=checklist("observation", "Falta terminar"))
+    observed = await client.post(f"{evolution_base}/work-items/{first_work}/entries", headers=auth_headers, json={"notes": "Falta terminar"})
     assert observed.status_code == 201, observed.text
-    assert observed.json()["answers"][0]["response"] == "observation"
-    assert (await client.post(f"{evolution_base}/work-items/{first_work}/complete", headers=auth_headers, json={"result_condition": "restoration"})).status_code == 409
-    invalid = await client.post(f"{evolution_base}/work-items/{first_work}/entries", headers=auth_headers, json=checklist("observation"))
+    assert observed.json()["control_completed"] is False
+    assert observed.json()["notes"] == "Falta terminar"
+    assert next(item for item in (await client.get(work_base)).json() if item["id"] == first_work)["completed_at"] is None
+    invalid = await client.post(f"{evolution_base}/work-items/{first_work}/entries", headers=auth_headers, json={})
     assert invalid.status_code == 422
 
     for item in work:
-        entry = await client.post(f"{evolution_base}/work-items/{item['id']}/entries", headers=auth_headers, json=checklist("yes"))
+        entry = await client.post(f"{evolution_base}/work-items/{item['id']}/entries", headers=auth_headers, json={"control_completed": True})
         assert entry.status_code == 201, entry.text
-        completed = await client.post(f"{evolution_base}/work-items/{item['id']}/complete", headers=auth_headers, json={
-            "result_condition": "restoration", "result_note": "Resultado sintetico",
-        })
-        assert completed.status_code == 200, completed.text
-        assert completed.json()["completed_at"] is not None
-        assert completed.json()["result_event_id"] is not None
+        assert entry.json()["control_completed"] is True
+        completed = next(value for value in (await client.get(work_base)).json() if value["id"] == item["id"])
+        assert completed["completed_at"] is not None
+        assert completed["result_event_id"] is None
+        assert (await client.post(f"{evolution_base}/work-items/{item['id']}/entries", headers=auth_headers, json={"notes": "Tarde"})).status_code == 409
     assert (await client.get(plans_base)).json()[0]["status"] == "completed"
     assert len((await client.get(f"{evolution_base}/entries")).json()) == 3
-    assert len((await client.get(f"/api/v1/patients/{patient_id}/odontogram/history")).json()) == 4
+    assert len((await client.get(f"/api/v1/patients/{patient_id}/odontogram/history")).json()) == 2
 
 
 @pytest.mark.asyncio

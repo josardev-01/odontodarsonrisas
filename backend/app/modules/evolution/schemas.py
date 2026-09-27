@@ -4,11 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.modules.odontogram.models import DentalCondition
-
 Step = Literal["preparation", "procedure", "final_control"]
 Response = Literal["yes", "no", "observation"]
-STEPS = {"preparation", "procedure", "final_control"}
 
 
 class ChecklistAnswer(BaseModel):
@@ -24,17 +21,17 @@ class ChecklistAnswer(BaseModel):
 
 
 class EvolutionEntryCreate(BaseModel):
-    answers: list[ChecklistAnswer] = Field(min_length=3, max_length=3)
+    control_completed: bool = False
     notes: str | None = Field(default=None, max_length=4000)
 
     @model_validator(mode="after")
-    def all_steps_once(self):
-        if {answer.step for answer in self.answers} != STEPS:
-            raise ValueError("All three checklist steps are required once")
+    def unfinished_needs_notes(self):
+        if not self.control_completed and not (self.notes or "").strip():
+            raise ValueError("Session notes are required when control is not completed")
         return self
 
 
-class EvolutionEntryRead(EvolutionEntryCreate):
+class EvolutionEntryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     patient_id: UUID
@@ -42,8 +39,6 @@ class EvolutionEntryRead(EvolutionEntryCreate):
     plan_item_id: UUID
     recorded_by: UUID
     created_at: datetime
-
-
-class CompleteProcedure(BaseModel):
-    result_condition: DentalCondition
-    result_note: str | None = Field(default=None, max_length=2000)
+    control_completed: bool | None
+    answers: list[ChecklistAnswer]
+    notes: str | None
