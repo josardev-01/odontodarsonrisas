@@ -39,6 +39,7 @@ class TreatmentPlanItem(EntityMixin, Base):
     plan_id: Mapped[UUID] = mapped_column(ForeignKey("treatment_plans.id", ondelete="CASCADE"), index=True)
     plan: Mapped[TreatmentPlan] = relationship(back_populates="items")
     treatment_id: Mapped[UUID] = mapped_column(ForeignKey("treatments.id", ondelete="RESTRICT"), index=True)
+    work_item_id: Mapped[UUID | None] = mapped_column(ForeignKey("odontogram_work_items.id", ondelete="RESTRICT"), index=True)
     tooth_code: Mapped[str | None] = mapped_column(String(2))
     treatment_code: Mapped[str] = mapped_column(String(40))
     description: Mapped[str] = mapped_column(String(200))

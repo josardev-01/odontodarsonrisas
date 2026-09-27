@@ -9,6 +9,8 @@ from app.modules.audit import models as audit_models  # noqa: F401
 from app.modules.audit.api import router as audit_router
 from app.modules.billing import models as billing_models  # noqa: F401
 from app.modules.billing.api import router as billing_router
+from app.modules.evolution import models as evolution_models  # noqa: F401
+from app.modules.evolution.api import router as evolution_router
 from app.modules.identity.api import router as identity_router
 from app.modules.notifications import models as notification_models  # noqa: F401
 from app.modules.notifications.api import router as notifications_router
@@ -91,6 +93,7 @@ app.include_router(audit_router, prefix="/api/v1")
 app.include_router(patients_router, prefix="/api/v1")
 app.include_router(clinical_router, prefix="/api/v1")
 app.include_router(odontogram_router, prefix="/api/v1")
+app.include_router(evolution_router, prefix="/api/v1")
 app.include_router(professionals_router, prefix="/api/v1")
 app.include_router(scheduling_router, prefix="/api/v1")
 app.include_router(treatments_router, prefix="/api/v1")
