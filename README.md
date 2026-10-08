@@ -8,8 +8,9 @@ Scaffold inicial para la aplicacion web de la clinica odontologica. La infraestr
 - Historial clinico: adjunto del documento fisico firmado por el paciente desde su Perfil, con versiones conservadas en PostgreSQL.
 - Consentimientos: registro versionado de la evidencia firmada y ubicacion del original.
 - Adjuntos firmados: escaneos PDF/JPG/PNG de consentimientos y autorizaciones WhatsApp/SMS en PostgreSQL, con descarga limitada por rol y auditoria.
-- Odontograma: numeracion FDI, estados por pieza o superficie e historial inmutable.
+- Odontograma: numeracion FDI, estados por pieza o superficie, historial inmutable y lista activa de trabajos propuestos.
 - Tratamientos: catalogo con codigo, categoria y precio referencial en PYG.
+- Planes y evolucion: el presupuesto carga juntos los trabajos activos del odontograma; el profesional guarda notas de cada sesion en curso y marca Control realizado al finalizar el tratamiento.
 - Agenda: creacion, consulta y proteccion contra colisiones de citas.
 - Agenda operativa: reprogramacion, cancelacion y finalizacion auditadas.
 - Profesionales: alta, edicion y activacion o desactivacion logica.

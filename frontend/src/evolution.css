@@ -1,0 +1,7 @@
+.work-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+.work-list li { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .65rem 0; border-bottom: 1px solid #b8dadd; }
+.evolution-form { display: grid; gap: .9rem; margin: 1rem 0; }
+.evolution-control { display: inline-flex; align-items: center; gap: .6rem; font-weight: 700; }
+.evolution-control input { width: 1.2rem; height: 1.2rem; }
+.evolution-history { border-top: 1px solid #b8dadd; padding: .65rem 0; }
+.budget-price-form { display: flex; align-items: end; gap: .6rem; flex-wrap: wrap; }
