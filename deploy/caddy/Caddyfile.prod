@@ -1,0 +1,25 @@
+{$SITE_DOMAIN} {
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    respond /healthz "ok" 200
+
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    handle {
+        reverse_proxy frontend:8080
+    }
+}
+
+# Ruta interna para el healthcheck del contenedor; no se publica en el host.
+:8080 {
+    respond /healthz "ok" 200
+    respond 404
+}

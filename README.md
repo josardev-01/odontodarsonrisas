@@ -100,4 +100,4 @@ No use `down -v` salvo que pretenda eliminar de forma irreversible la base local
 
 ## Produccion
 
-Todavia no existe `compose.prod.yaml`. No exponga este scaffold directamente a Internet. El `Caddyfile` local tiene HTTPS automatico desactivado y no contiene dominio publico. TLS, secretos, backups, limites de recursos, migraciones, observabilidad y hardening de OCI deben resolverse despues de confirmar VPS, arquitectura y dominio.
+`compose.prod.yaml` y `deploy/caddy/Caddyfile.prod` preparan HTTPS para `www.darsonrisaspy.com` sin alterar el entorno local. No exponer el servicio hasta verificar la instancia OCI, DNS, firewall, secretos, backups y restauracion. El procedimiento y los controles pendientes estan en `docs/deployment-oci.md`.
