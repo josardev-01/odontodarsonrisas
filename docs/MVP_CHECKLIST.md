@@ -37,7 +37,9 @@ Este checklist define el cierre funcional del piloto interno. No equivale a auto
 - [x] Preparar `compose.prod.yaml` y configuración Caddy para HTTPS, validados localmente sin exposición pública.
 - [x] Verificar TLS público con el DNS y los puertos de la instancia OCI.
 - [x] Configurar secretos fuera del repositorio.
-- [ ] Implementar backups automáticos, retención y restauración probada.
+- [x] Automatizar backups cifrados y probar la restauración de la base vacía en PostgreSQL 16 aislado.
+- [ ] Probar la restauración de documentos adjuntos con datos sintéticos.
+- [ ] Aplicar la retención diaria de 30 días sin exponer la última copia válida a un borrado automático.
 - [ ] Proteger los backups que ahora contienen documentos firmados y definir su retención y acceso.
 - [ ] Configurar métricas, alertas y rotación de logs.
 - [ ] Aplicar hardening del VPS, firewall mínimo y SSH por clave.
