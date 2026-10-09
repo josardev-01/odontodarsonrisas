@@ -1,0 +1,13 @@
+[Unit]
+Description=Dar Sonrisas encrypted PostgreSQL backup to OCI Object Storage
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/dar-sonrisas
+ExecStart=/usr/bin/bash /home/ubuntu/dar-sonrisas/deploy/backup-oci.sh
+TimeoutStartSec=2h
+Nice=10
