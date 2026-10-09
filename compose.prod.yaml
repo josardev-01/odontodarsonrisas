@@ -22,6 +22,7 @@ services:
   migrate:
     environment:
       DAR_SONRISAS_ENVIRONMENT: production
+      DAR_SONRISAS_SESSION_COOKIE_SECURE: "true"
     logging: *bounded-logs
 
   frontend:
