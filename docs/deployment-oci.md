@@ -11,16 +11,16 @@ Un VPS OCI ejecuta PostgreSQL, FastAPI, el frontend y Caddy con `compose.yaml` m
 1. Confirmar sistema operativo, arquitectura y usuario SSH de la instancia. Probar las imágenes en esa arquitectura antes de usar datos reales.
 2. En Cloudflare, crear un registro A de `www.darsonrisaspy.com` hacia `129.151.39.44` con estado **Solo DNS** durante la primera verificación; comprobarlo desde una red externa. Abrir 80/443 en la lista de seguridad o NSG de OCI y en el firewall del VPS. Restringir 22 a las IP administrativas. No publicar 5432, 8000, 8001 ni 8080. Un eventual proxy de Cloudflare requiere revisar por separado TLS, caché y tratamiento de datos.
 3. Instalar Docker Engine y el plugin Compose, configurar actualizaciones del sistema y acceso SSH por clave. No utilizar el Docker Desktop local como servidor público.
-4. Elegir destino, retención y custodia de las copias cifradas; automatizar y probar una restauración antes de incorporar datos de pacientes. Los documentos firmados adjuntos residen en PostgreSQL y forman parte del respaldo.
+4. Crear un bucket privado y configurar la copia A descrita abajo; automatizar y probar una restauración antes de incorporar datos de pacientes. Los documentos firmados adjuntos residen en PostgreSQL y forman parte del respaldo.
 5. Confirmar con dirección clínica y asesoría paraguaya las reglas de uso de datos reales, conservación, acceso y tratamiento fuera del país. Los originales físicos firmados se conservan por el procedimiento de la clínica; una base vacía permite la puesta en marcha técnica sin migrar expedientes.
 
-## Elección de respaldo pendiente
+## Respaldo elegido: A
 
-- **A — recomendada:** exportación lógica diaria de PostgreSQL, cifrada antes de salir del VPS y enviada a un bucket privado de OCI Object Storage. Permite recuperar la base y sus documentos adjuntos sin restaurar toda la máquina. Retención inicial propuesta: 30 días, sujeta a la política clínica y jurídica.
-- **B:** copias automáticas cifradas del volumen de OCI. Simplifica la recuperación de la máquina o del disco completo, pero no sustituye una restauración lógica comprobada de PostgreSQL.
-- **C:** combinar A y B para tener dos vías de recuperación, con más almacenamiento y costo operativo.
+Se eligió exportación lógica diaria de PostgreSQL, cifrada **antes** de salir del VPS y enviada a un bucket privado de OCI Object Storage. Permite recuperar la base y sus documentos adjuntos sin restaurar toda la máquina. El archivo debe cifrarse con una clave pública; la clave privada de recuperación se conserva fuera del VPS en custodia de la clínica. El acceso de la instancia al bucket debe limitarse al mínimo necesario mediante IAM.
 
-Ninguna opción está implementada en este PR. La elección, permisos de acceso, custodia de la clave y prueba de restauración son condiciones antes de guardar expedientes reales.
+Retención inicial propuesta: 30 días, sujeta a la política clínica y jurídica. Revisar el consumo de Object Storage antes de fijarla: [OCI documenta](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) 20 GB combinados para cuentas solo Always Free y, en cuentas de pago o prueba, 10 GB de la capa Standard más cupos separados de otras capas. El tamaño de 30 copias completas depende de los documentos adjuntos. Crear una [alerta de presupuesto](https://docs.oracle.com/en-us/iaas/Content/Billing/Tasks/create-alert-rule.htm) y revisar el uso real del bucket; una alerta avisa del gasto, pero no constituye un tope automático. No borrar la última copia válida para ahorrar espacio. Las copias de volumen de OCI quedan como mejora opcional posterior.
+
+La tarea automática, el bucket, la política de retención y una restauración comprobada siguen pendientes. No guardar expedientes reales hasta completarlos.
 
 ## Preparación en el VPS
 
