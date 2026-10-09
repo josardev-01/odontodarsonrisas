@@ -1,0 +1,44 @@
+# Producción: usar con compose.yaml y --env-file fuera del repositorio.
+name: dar-sonrisas-prod
+
+x-logging: &bounded-logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    logging: *bounded-logs
+
+  backend:
+    environment:
+      DAR_SONRISAS_ENVIRONMENT: production
+      DAR_SONRISAS_CORS_ORIGINS: '["https://${SITE_DOMAIN:?Define SITE_DOMAIN}"]'
+      DAR_SONRISAS_SEED_SYNTHETIC_PROFESSIONALS: "false"
+      DAR_SONRISAS_SESSION_COOKIE_SECURE: "true"
+    logging: *bounded-logs
+
+  migrate:
+    environment:
+      DAR_SONRISAS_ENVIRONMENT: production
+    logging: *bounded-logs
+
+  frontend:
+    logging: *bounded-logs
+
+  caddy:
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Define SITE_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging: *bounded-logs
+
+volumes:
+  caddy_data:
+  caddy_config:

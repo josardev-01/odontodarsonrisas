@@ -34,7 +34,8 @@ Este checklist define el cierre funcional del piloto interno. No equivale a auto
 
 - [ ] Confirmar arquitectura OCI (`aarch64` o `x86_64`).
 - [ ] Definir dominio y DNS.
-- [ ] Crear `compose.prod.yaml` y TLS público con Caddy.
+- [x] Preparar `compose.prod.yaml` y configuración Caddy para HTTPS, validados localmente sin exposición pública.
+- [ ] Verificar TLS público con el DNS y los puertos de la instancia OCI.
 - [ ] Configurar secretos fuera del repositorio.
 - [ ] Implementar backups automáticos, retención y restauración probada.
 - [ ] Proteger los backups que ahora contienen documentos firmados y definir su retención y acceso.
