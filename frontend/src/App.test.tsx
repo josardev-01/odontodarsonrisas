@@ -22,11 +22,16 @@ describe('App',()=>{
     await userEvent.click(screen.getByRole('button',{name:'Ingresar'}));
     expect(await screen.findByRole('alert')).toHaveTextContent('correo o la contraseña');
   });
-  it('muestra primero la landing pública y sus canales de contacto',()=>{
+  it('muestra primero la landing pública y sus canales de contacto',async()=>{
     vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(null,{status:401}));
+    vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
     render(<App/>);
     expect(screen.getByRole('heading',{name:'Tu sonrisa merece un cuidado extraordinario.'})).toBeInTheDocument();
-    expect(screen.getByRole('link',{name:'Consultar por WhatsApp'})).toHaveAttribute('href',expect.stringContaining('595994761736'));
+    expect(screen.getByRole('link',{name:'Consultar por WhatsApp'})).toHaveAttribute('href',expect.stringContaining('595984417172'));
+    expect(screen.getByRole('link',{name:'Facebook'})).toHaveAttribute('href','https://www.facebook.com/DARSONRIS?locale=es_LA');
     expect(screen.getByRole('button',{name:'Contactanos'})).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button',{name:'Contactanos'}));
+    expect(screen.getByRole('link',{name:'darsonrisasypa@gmail.com'})).toHaveAttribute('href','mailto:darsonrisasypa@gmail.com');
+    expect(screen.getByRole('link',{name:'+595 984 417 172'})).toHaveAttribute('href',expect.stringContaining('wa.me/595984417172'));
   });
 });
